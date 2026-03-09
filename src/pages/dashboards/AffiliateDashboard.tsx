@@ -21,6 +21,7 @@ import {
 import { cn } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import WalletCard from '../../components/WalletCard';
 
 export default function AffiliateDashboard() {
   const { user } = useAuth();
@@ -136,6 +137,8 @@ export default function AffiliateDashboard() {
               <h1 className="text-3xl font-bold text-stone-900">Dashboard Afiliado</h1>
               <p className="text-stone-500">Promova produtos e acompanhe suas comissões.</p>
             </div>
+
+            <WalletCard />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
@@ -362,33 +365,7 @@ export default function AffiliateDashboard() {
         return (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900">Sua Carteira</h1>
-            <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
-              <div className="relative z-10">
-                <p className="text-indigo-100 text-sm font-medium mb-1">Saldo de Comissões Disponível</p>
-                <h2 className="text-4xl font-black">R$ 1.240,00</h2>
-                <button className="mt-8 bg-white text-indigo-600 px-6 py-3 rounded-2xl font-bold hover:bg-stone-100 transition-all">Solicitar Saque</button>
-              </div>
-              <Wallet className="absolute -right-8 -bottom-8 h-48 w-48 text-white/5 rotate-12" />
-            </div>
-            <div className="bg-white p-6 rounded-3xl border border-stone-200">
-              <h3 className="text-lg font-bold text-stone-900 mb-4">Últimas Comissões</h3>
-              <div className="space-y-3">
-                {[1, 2, 3].map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600">
-                        <DollarSign className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-stone-900">Comissão: Venda Ebook</div>
-                        <div className="text-[10px] text-stone-500">Há {i + 2} dias</div>
-                      </div>
-                    </div>
-                    <div className="text-sm font-bold text-emerald-600">+ R$ 48,50</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <WalletCard />
           </div>
         );
       case 'perfil':

@@ -18,10 +18,12 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import WalletCard from '../../components/WalletCard';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [pendingProducts, setPendingProducts] = useState<any[]>([]);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     users: 0,
@@ -32,6 +34,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchPendingProducts();
+    fetchPendingWithdrawals();
     fetchStats();
   }, []);
 
@@ -39,7 +42,7 @@ export default function AdminDashboard() {
     try {
       const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
       const { count: pendingProdCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      const { count: pendingWithCount } = await supabase.from('withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      const { count: pendingWithCount } = await supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
       
       setStats({
         users: usersCount || 0,
@@ -70,6 +73,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchPendingWithdrawals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('withdrawal_requests')
+        .select('*, profiles(email)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingWithdrawals(data || []);
+    } catch (err) {
+      console.error('Error fetching pending withdrawals:', err);
+    }
+  };
+
   const handleProductAction = async (productId: string, status: 'approved' | 'rejected') => {
     try {
       const { error } = await supabase
@@ -87,6 +105,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleWithdrawalAction = async (withdrawalId: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('withdrawal_requests')
+        .update({ status })
+        .eq('id', withdrawalId);
+
+      if (error) throw error;
+      
+      setPendingWithdrawals(prev => prev.filter(w => w.id !== withdrawalId));
+      fetchStats();
+    } catch (err) {
+      console.error(`Error ${status} withdrawal:`, err);
+      alert('Erro ao processar ação no saque.');
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -96,6 +131,8 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-bold text-stone-900">Dashboard ADM</h1>
               <p className="text-stone-500">Visão geral do sistema e métricas principais.</p>
             </div>
+
+            <WalletCard />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
@@ -141,6 +178,64 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'financeiro':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-bold text-stone-900">Gestão Financeira</h1>
+              <p className="text-stone-500">Aprove ou rejeite solicitações de saque dos usuários.</p>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-stone-900">Saques Pendentes</h2>
+                <span className="px-3 py-1 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold">
+                  {pendingWithdrawals.length} solicitações
+                </span>
+              </div>
+              <div className="divide-y divide-stone-100">
+                {pendingWithdrawals.length === 0 ? (
+                  <div className="p-12 text-center space-y-4">
+                    <div className="h-16 w-16 bg-stone-50 text-stone-300 rounded-full flex items-center justify-center mx-auto">
+                      <Wallet className="h-8 w-8" />
+                    </div>
+                    <p className="text-stone-500">Nenhuma solicitação de saque pendente.</p>
+                  </div>
+                ) : (
+                  pendingWithdrawals.map((withdrawal) => (
+                    <div key={withdrawal.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400">
+                          <Wallet className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-stone-900">R$ {withdrawal.amount.toLocaleString()}</div>
+                          <div className="text-xs text-stone-500">{withdrawal.profiles?.email} • {withdrawal.method}</div>
+                          <div className="text-[10px] font-mono text-stone-400 mt-1">{withdrawal.details?.info}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleWithdrawalAction(withdrawal.id, 'rejected')}
+                          className="px-4 py-2 text-rose-600 font-bold hover:bg-rose-50 rounded-xl transition-all text-sm"
+                        >
+                          Rejeitar
+                        </button>
+                        <button 
+                          onClick={() => handleWithdrawalAction(withdrawal.id, 'approved')}
+                          className="px-6 py-2 bg-emerald-600 text-white font-bold hover:bg-emerald-700 rounded-xl transition-all text-sm flex items-center gap-2"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          Aprovar Pagamento
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

@@ -52,7 +52,10 @@ export default function Checkout() {
 
     setProcessing(true);
     try {
-      const commissionAmount = ref ? (product.price * (product.commission_rate / 100)) : 0;
+      const platformFeeRate = 0.05; // 5% platform fee
+      const platformFee = product.price * platformFeeRate;
+      const affiliateCommission = ref ? (product.price * (product.commission_rate / 100)) : 0;
+      const producerAmount = product.price - affiliateCommission - platformFee;
 
       // 1. Create Order
       const { data: order, error: orderError } = await supabase
@@ -63,7 +66,7 @@ export default function Checkout() {
           producer_id: product.producer_id,
           affiliate_id: ref || null,
           amount: product.price,
-          commission_amount: commissionAmount,
+          commission_amount: affiliateCommission,
           status: 'completed'
         })
         .select()
@@ -71,22 +74,37 @@ export default function Checkout() {
 
       if (orderError) throw orderError;
 
-      // 2. Update Producer Wallet (Simulation)
-      // In a real app, this would be a database trigger or edge function
-      const producerAmount = product.price - commissionAmount;
-      
-      // We'll just assume the wallet exists and update it
-      // This is simplified for the demo
-      await supabase.rpc('increment_wallet_balance', {
+      // 2. Update Producer Wallet (Pending)
+      await supabase.rpc('process_sale_funds', {
         user_id_param: product.producer_id,
-        amount_param: producerAmount
+        amount_param: producerAmount,
+        description_param: `Venda do produto: ${product.name}`
       });
 
-      // 3. Update Affiliate Wallet (if applicable)
-      if (ref && commissionAmount > 0) {
-        await supabase.rpc('increment_wallet_balance', {
+      // 3. Update Affiliate Wallet (Pending)
+      if (ref && affiliateCommission > 0) {
+        await supabase.rpc('process_sale_funds', {
           user_id_param: ref,
-          amount_param: commissionAmount
+          amount_param: affiliateCommission,
+          description_param: `Comissão de afiliado: ${product.name}`
+        });
+      }
+
+      // 4. Update Admin Wallet (Available immediately or pending? Let's say available for platform)
+      // We need to find the admin user. For simplicity, we'll use a fixed ID or just skip for now if not found.
+      const { data: adminUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin')
+        .limit(1)
+        .single();
+
+      if (adminUser) {
+        await supabase.rpc('process_sale_funds', {
+          user_id_param: adminUser.id,
+          amount_param: platformFee,
+          description_param: `Taxa de plataforma: ${product.name}`,
+          days_to_release: 0 // Admin gets it immediately
         });
       }
 

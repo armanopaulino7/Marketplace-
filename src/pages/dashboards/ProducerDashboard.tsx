@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import WalletCard from '../../components/WalletCard';
 
 export default function ProducerDashboard() {
   const { user } = useAuth();
@@ -159,6 +160,8 @@ export default function ProducerDashboard() {
                 Novo Produto
               </button>
             </div>
+
+            <WalletCard />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
@@ -503,30 +506,7 @@ export default function ProducerDashboard() {
         return (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900">Sua Carteira</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-stone-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <p className="text-stone-400 text-sm font-medium mb-1">Saldo Disponível para Saque</p>
-                  <h2 className="text-4xl font-black">R$ 8.450,00</h2>
-                  <button className="mt-8 bg-white text-stone-900 px-6 py-3 rounded-2xl font-bold hover:bg-stone-100 transition-all">Solicitar Saque</button>
-                </div>
-                <Wallet className="absolute -right-8 -bottom-8 h-48 w-48 text-white/5 rotate-12" />
-              </div>
-              <div className="bg-white p-8 rounded-3xl border border-stone-200">
-                <h3 className="text-lg font-bold text-stone-900 mb-6">Histórico de Saques</h3>
-                <div className="space-y-4">
-                  {[1, 2].map((_, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                      <div>
-                        <div className="font-bold text-stone-900">R$ 2.000,00</div>
-                        <div className="text-xs text-stone-500">15/02/2024 • Transferência Bancária</div>
-                      </div>
-                      <span className="px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase rounded-lg">Concluído</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <WalletCard />
           </div>
         );
       case 'perfil':
