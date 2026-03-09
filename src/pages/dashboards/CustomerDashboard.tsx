@@ -15,19 +15,66 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function CustomerDashboard() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState<any[]>([]);
+  const [myOrders, setMyOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [stats, setStats] = useState({
+    myPurchases: 0,
+    favorites: 0,
+    studyHours: '0h'
+  });
 
   useEffect(() => {
-    if (activeTab === 'home') {
-      fetchProducts();
+    if (user) {
+      if (activeTab === 'home') {
+        fetchProducts();
+      }
+      if (activeTab === 'dashboard' || activeTab === 'pedidos') {
+        fetchMyOrders();
+      }
+      fetchStats();
     }
-  }, [activeTab]);
+  }, [user, activeTab]);
+
+  const fetchStats = async () => {
+    if (!user) return;
+    try {
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('customer_id', user.id);
+      
+      setStats(prev => ({ ...prev, myPurchases: count || 0 }));
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  const fetchMyOrders = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, products(*)')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setMyOrders(data || []);
+    } catch (err) {
+      console.error('Error fetching my orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -64,9 +111,9 @@ export default function CustomerDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Minhas Compras', value: '5', icon: ShoppingBag, color: 'bg-indigo-50 text-indigo-600' },
-                { label: 'Favoritos', value: '12', icon: Heart, color: 'bg-rose-50 text-rose-600' },
-                { label: 'Horas de Estudo', value: '24h', icon: Clock, color: 'bg-amber-50 text-amber-600' },
+                { label: 'Minhas Compras', value: stats.myPurchases.toString(), icon: ShoppingBag, color: 'bg-indigo-50 text-indigo-600' },
+                { label: 'Favoritos', value: stats.favorites.toString(), icon: Heart, color: 'bg-rose-50 text-rose-600' },
+                { label: 'Horas de Estudo', value: stats.studyHours, icon: Clock, color: 'bg-amber-50 text-amber-600' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
@@ -82,7 +129,7 @@ export default function CustomerDashboard() {
 
             <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-stone-900">Meus Cursos</h2>
+                <h2 className="text-lg font-bold text-stone-900">Meus Produtos</h2>
                 <button 
                   onClick={() => setActiveTab('pedidos')}
                   className="text-sm text-indigo-600 font-bold hover:underline"
@@ -92,38 +139,41 @@ export default function CustomerDashboard() {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[1, 2].map((_, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row gap-4 group cursor-pointer">
-                      <div className="h-32 w-full sm:w-48 bg-stone-200 rounded-2xl flex-shrink-0 overflow-hidden relative">
-                        <img 
-                          src={`https://picsum.photos/seed/course${i}/400/300`} 
-                          alt="Course" 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <PlayCircle className="h-12 w-12 text-white" />
-                        </div>
-                        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-lg backdrop-blur-sm font-bold">
-                          {i * 25}% CONCLUÍDO
-                        </div>
-                      </div>
-                      <div className="flex flex-col justify-between py-1">
-                        <div>
-                          <h3 className="font-bold text-stone-900 text-lg group-hover:text-indigo-600 transition-colors">Masterclass de Design UI/UX {i+1}</h3>
-                          <p className="text-sm text-stone-500 line-clamp-2">Domine as ferramentas e processos de design modernos.</p>
-                        </div>
-                        <div className="mt-4 flex items-center gap-2">
-                          <button className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">
-                            Continuar Assistindo
-                          </button>
-                          <button className="p-2.5 rounded-xl border border-stone-200 text-stone-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
-                            <Heart className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
+                  {myOrders.length === 0 ? (
+                    <div className="col-span-2 py-12 text-center text-stone-400">
+                      Você ainda não adquiriu nenhum produto.
                     </div>
-                  ))}
+                  ) : (
+                    myOrders.slice(0, 2).map((order) => (
+                      <div key={order.id} className="flex flex-col sm:flex-row gap-4 group cursor-pointer" onClick={() => navigate(`/product/${order.product_id}`)}>
+                        <div className="h-32 w-full sm:w-48 bg-stone-200 rounded-2xl flex-shrink-0 overflow-hidden relative">
+                          {order.products?.images?.[0] ? (
+                            <img 
+                              src={order.products.images[0]} 
+                              alt={order.products.name} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-stone-400">
+                              <Package className="h-8 w-8" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col justify-between py-1">
+                          <div>
+                            <h3 className="font-bold text-stone-900 text-lg group-hover:text-indigo-600 transition-colors line-clamp-1">{order.products?.name}</h3>
+                            <p className="text-sm text-stone-500 line-clamp-2">{order.products?.description}</p>
+                          </div>
+                          <div className="mt-4 flex items-center gap-2">
+                            <button className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">
+                              Acessar Produto
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -219,27 +269,40 @@ export default function CustomerDashboard() {
             <h1 className="text-3xl font-bold text-stone-900">Meus Pedidos</h1>
             <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
               <div className="divide-y divide-stone-100">
-                {[1, 2, 3].map((_, i) => (
-                  <div key={i} className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-stone-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400">
-                        <ShoppingBag className="h-8 w-8" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-stone-900">Pedido #ORD-{5000 + i}</div>
-                        <p className="text-sm text-stone-500">Curso de Fotografia Profissional • 12/02/2024</p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded uppercase">Concluído</span>
-                          <span className="text-[10px] text-stone-400 font-bold">297,00 Kz</span>
+                {myOrders.length === 0 ? (
+                  <div className="p-12 text-center text-stone-500">
+                    Nenhum pedido realizado.
+                  </div>
+                ) : (
+                  myOrders.map((order) => (
+                    <div key={order.id} className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-stone-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="h-16 w-16 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400 overflow-hidden">
+                          {order.products?.images?.[0] ? (
+                            <img src={order.products.images[0]} alt={order.products.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <ShoppingBag className="h-8 w-8" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-bold text-stone-900">Pedido #{order.id.substring(0, 8).toUpperCase()}</div>
+                          <p className="text-sm text-stone-500">{order.products?.name} • {new Date(order.created_at).toLocaleDateString()}</p>
+                          <div className="mt-1 flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded uppercase">{order.status}</span>
+                            <span className="text-[10px] text-stone-400 font-bold">{order.amount.toLocaleString()} Kz</span>
+                          </div>
                         </div>
                       </div>
+                      <button 
+                        onClick={() => navigate(`/product/${order.product_id}`)}
+                        className="w-full sm:w-auto px-6 py-2.5 border border-stone-200 text-stone-700 rounded-xl font-bold text-sm hover:bg-stone-100 transition-all flex items-center justify-center gap-2"
+                      >
+                        Ver Detalhes
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
                     </div>
-                    <button className="w-full sm:w-auto px-6 py-2.5 border border-stone-200 text-stone-700 rounded-xl font-bold text-sm hover:bg-stone-100 transition-all flex items-center justify-center gap-2">
-                      Ver Recibo
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -254,10 +317,10 @@ export default function CustomerDashboard() {
                   C
                 </div>
                 <div className="text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-stone-900">Carlos Cliente</h2>
-                  <p className="text-stone-500">carlos@exemplo.com</p>
+                  <h2 className="text-xl font-bold text-stone-900">{user?.email?.split('@')[0]}</h2>
+                  <p className="text-stone-500">{user?.email}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-stone-100 text-stone-500 text-xs font-bold rounded-full uppercase tracking-widest">Membro desde 2024</span>
+                    <span className="px-3 py-1 bg-stone-100 text-stone-500 text-xs font-bold rounded-full uppercase tracking-widest">Cliente</span>
                   </div>
                 </div>
               </div>

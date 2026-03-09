@@ -36,10 +36,33 @@ export default function AffiliateDashboard() {
     level: 'Bronze'
   });
 
+  const fetchStats = async () => {
+    if (!user) return;
+    try {
+      // Fetch pending commissions
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      // For now, let's just use the wallet balance as commission
+      // In a real app, we'd have a commissions table
+      setStats({
+        pendingCommission: wallet?.balance || 0,
+        totalClicks: 0, // Need a clicks tracking table for this
+        level: 'Bronze'
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchAvailableProducts();
       fetchMyAffiliations();
+      fetchStats();
     }
   }, [user, activeTab]);
 
@@ -378,11 +401,10 @@ export default function AffiliateDashboard() {
                   A
                 </div>
                 <div className="text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-stone-900">Ana Afiliada</h2>
-                  <p className="text-stone-500">ana@exemplo.com</p>
+                  <h2 className="text-xl font-bold text-stone-900">{user?.email?.split('@')[0]}</h2>
+                  <p className="text-stone-500">{user?.email}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-widest">Afiliado Prata</span>
-                    <span className="px-3 py-1 bg-stone-100 text-stone-500 text-xs font-bold rounded-full uppercase tracking-widest">Top 100</span>
+                    <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-widest">Afiliado</span>
                   </div>
                 </div>
               </div>

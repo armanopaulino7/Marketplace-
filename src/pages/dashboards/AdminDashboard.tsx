@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [newFee, setNewFee] = useState({ neighborhood: '', fee: '' });
   const [editingFee, setEditingFee] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
   const [stats, setStats] = useState({
     users: 0,
     sales: 0,
@@ -40,6 +41,7 @@ export default function AdminDashboard() {
     fetchPendingWithdrawals();
     fetchStats();
     fetchDeliveryFees();
+    fetchUsers();
   }, []);
 
   const fetchDeliveryFees = async () => {
@@ -116,15 +118,44 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
       const { count: pendingProdCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'pending');
       const { count: pendingWithCount } = await supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
       
+      // Fetch total sales (platform fees + delivery fees)
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('amount, delivery_fee');
+      
+      let totalSales = 0;
+      if (!ordersError && orders) {
+        // Platform fee is 10% of (total - delivery_fee)
+        totalSales = orders.reduce((acc, order) => {
+          const productPrice = order.amount - (order.delivery_fee || 0);
+          const platformFee = productPrice * 0.10;
+          return acc + platformFee + (order.delivery_fee || 0);
+        }, 0);
+      }
+      
       setStats({
         users: usersCount || 0,
-        sales: 45200, // Mock for now
+        sales: totalSales,
         pendingWithdrawals: pendingWithCount || 0,
         pendingProducts: pendingProdCount || 0
       });
@@ -274,20 +305,10 @@ export default function AdminDashboard() {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {[1, 2, 3, 4].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-stone-50 border border-stone-100">
-                      <div className="h-10 w-10 rounded-full bg-stone-200 flex items-center justify-center font-bold text-stone-600">
-                        U{i}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-bold text-stone-900">Novo usuário registrado</div>
-                        <div className="text-xs text-stone-500">Há {i + 1} horas atrás • IP: 192.168.1.{i}</div>
-                      </div>
-                      <div className="text-xs font-bold px-3 py-1.5 rounded-xl bg-stone-200 text-stone-700 uppercase tracking-wider">
-                        LOG
-                      </div>
-                    </div>
-                  ))}
+                  <div className="py-12 text-center space-y-4">
+                    <Clock className="h-12 w-12 text-stone-100 mx-auto" />
+                    <p className="text-stone-500">Nenhuma atividade recente registrada.</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -407,6 +428,10 @@ export default function AdminDashboard() {
                     <div className="flex-1 text-center sm:text-left">
                       <h3 className="font-bold text-stone-900 text-lg">{product.name}</h3>
                       <p className="text-sm text-stone-500">Produtor: {product.profiles?.email} • {product.price.toLocaleString()} Kz</p>
+                      <p className="text-xs text-indigo-600 font-bold mt-1 flex items-center gap-1">
+                        <Truck className="h-3 w-3" />
+                        Pickup: {product.pickup_address}
+                      </p>
                       <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-2">
                         <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-lg">{product.category}</span>
                         <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">{product.subcategory}</span>
@@ -448,26 +473,34 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {['produtor', 'afiliado', 'cliente'].map((role, i) => (
-                    <tr key={i} className="hover:bg-stone-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-stone-900">usuario{i}@email.com</div>
-                        <div className="text-xs text-stone-500">ID: user_abc123{i}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">{role}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span className="text-sm text-stone-600">Ativo</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="text-indigo-600 font-bold text-sm hover:underline">Editar</button>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center text-stone-500">
+                        Nenhum usuário encontrado.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    users.map((u) => (
+                      <tr key={u.id} className="hover:bg-stone-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-stone-900">{u.email}</div>
+                          <div className="text-xs text-stone-500">ID: {u.id.substring(0, 8)}...</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">{u.role}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                            <span className="text-sm text-stone-600">Ativo</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button className="text-indigo-600 font-bold text-sm hover:underline">Editar</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

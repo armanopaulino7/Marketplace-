@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/Layout';
 import { 
   Package, 
@@ -37,6 +37,7 @@ export default function ProducerDashboard() {
     category: '',
     subcategory: '',
     commission_rate: '10',
+    pickup_address: '',
     images: [] as string[],
     variations: {
       tamanho: [] as string[],
@@ -47,6 +48,94 @@ export default function ProducerDashboard() {
 
   const [newVariation, setNewVariation] = useState({ type: 'tamanho', value: '' });
   const [imageUrl, setImageUrl] = useState('');
+  const [stats, setStats] = useState({
+    activeProducts: 0,
+    totalRevenue: 0,
+    affiliates: 0
+  });
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+      fetchRecentSales();
+      fetchTopProducts();
+    }
+  }, [user, activeTab]);
+
+  const fetchStats = async () => {
+    if (!user) return;
+    try {
+      const { count: activeCount } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('producer_id', user.id)
+        .eq('status', 'approved');
+
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('amount, commission_amount, delivery_fee')
+        .eq('producer_id', user.id)
+        .eq('status', 'completed');
+
+      const revenue = orders?.reduce((acc, order) => {
+        // Producer gets: amount - commission_amount - delivery_fee - 10% platform fee
+        const productPrice = order.amount - (order.delivery_fee || 0);
+        const platformFee = productPrice * 0.10;
+        return acc + (productPrice - (order.commission_amount || 0) - platformFee);
+      }, 0) || 0;
+
+      const { count: affiliateCount } = await supabase
+        .from('affiliations')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'approved')
+        .in('product_id', (await supabase.from('products').select('id').eq('producer_id', user.id)).data?.map(p => p.id) || []);
+
+      setStats({
+        activeProducts: activeCount || 0,
+        totalRevenue: revenue,
+        affiliates: affiliateCount || 0
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  const fetchRecentSales = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, products(name)')
+        .eq('producer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      setRecentSales(data || []);
+    } catch (err) {
+      console.error('Error fetching recent sales:', err);
+    }
+  };
+
+  const fetchTopProducts = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('producer_id', user.id)
+        .eq('status', 'approved')
+        .order('price', { ascending: false }) // Just as a proxy for "top" for now
+        .limit(3);
+      
+      if (error) throw error;
+      setTopProducts(data || []);
+    } catch (err) {
+      console.error('Error fetching top products:', err);
+    }
+  };
 
   const handleAddVariation = () => {
     if (!newVariation.value) return;
@@ -110,6 +199,7 @@ export default function ProducerDashboard() {
           category: formData.category,
           subcategory: formData.subcategory,
           commission_rate: parseFloat(formData.commission_rate),
+          pickup_address: formData.pickup_address,
           images: formData.images,
           variations: formData.variations,
           status: 'pending'
@@ -126,6 +216,7 @@ export default function ProducerDashboard() {
         category: '',
         subcategory: '',
         commission_rate: '10',
+        pickup_address: '',
         images: [],
         variations: { tamanho: [], peso: [], cor: [] }
       });
@@ -165,9 +256,9 @@ export default function ProducerDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Produtos Ativos', value: '12', icon: Package, color: 'bg-blue-50 text-blue-600' },
-                { label: 'Receita Total', value: '12.450 Kz', icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
-                { label: 'Afiliados', value: '48', icon: Users, color: 'bg-purple-50 text-purple-600' },
+                { label: 'Produtos Ativos', value: stats.activeProducts.toString(), icon: Package, color: 'bg-blue-50 text-blue-600' },
+                { label: 'Receita Total', value: `${stats.totalRevenue.toLocaleString()} Kz`, icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
+                { label: 'Afiliados', value: stats.affiliates.toString(), icon: Users, color: 'bg-purple-50 text-purple-600' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
@@ -183,23 +274,33 @@ export default function ProducerDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-stone-900 mb-4">Seus Produtos Mais Vendidos</h2>
+                <h2 className="text-lg font-bold text-stone-900 mb-4">Seus Produtos</h2>
                 <div className="space-y-4">
-                  {[1, 2].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 p-4 border border-stone-100 rounded-2xl hover:border-indigo-100 transition-all">
-                      <div className="h-16 w-16 bg-stone-100 rounded-xl flex items-center justify-center">
-                        <Package className="h-8 w-8 text-stone-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold text-stone-900">Curso de Marketing Digital {i+1}</div>
-                        <div className="text-sm text-stone-500">197,00 Kz</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-emerald-600">24 vendas</div>
-                        <div className="text-xs text-stone-400">Ativo</div>
-                      </div>
+                  {topProducts.length === 0 ? (
+                    <div className="py-12 text-center text-stone-400">
+                      Nenhum produto cadastrado.
                     </div>
-                  ))}
+                  ) : (
+                    topProducts.map((product) => (
+                      <div key={product.id} className="flex items-center gap-4 p-4 border border-stone-100 rounded-2xl hover:border-indigo-100 transition-all">
+                        <div className="h-16 w-16 bg-stone-100 rounded-xl flex items-center justify-center overflow-hidden">
+                          {product.images?.[0] ? (
+                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <Package className="h-8 w-8 text-stone-400" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-stone-900 line-clamp-1">{product.name}</div>
+                          <div className="text-sm text-stone-500">{product.price.toLocaleString()} Kz</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-emerald-600">{product.quantity} em estoque</div>
+                          <div className="text-xs text-stone-400 uppercase tracking-widest">{product.status}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -303,6 +404,19 @@ export default function ProducerDashboard() {
                           className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-stone-700 mb-1">Endereço de Recolha (Pickup) *</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={formData.pickup_address}
+                        onChange={e => setFormData({...formData, pickup_address: e.target.value})}
+                        placeholder="Ex: Rua Direita da Samba, Luanda (Seu endereço completo)" 
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                      />
+                      <p className="text-[10px] text-stone-400 mt-1 italic">Este endereço será usado pelo ADM para recolher o produto para entrega.</p>
                     </div>
                   </div>
                 </div>
@@ -481,23 +595,29 @@ export default function ProducerDashboard() {
                 </div>
               </div>
               <div className="divide-y divide-stone-100">
-                {[1, 2, 3, 4].map((_, i) => (
-                  <div key={i} className="p-6 flex items-center justify-between hover:bg-stone-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                        <DollarSign className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-stone-900">Pedido #ORD-{1000 + i}</div>
-                        <div className="text-sm text-stone-500">Cliente: maria@email.com • Há {i + 1}h</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-stone-900">197,00 Kz</div>
-                      <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Aprovado</div>
-                    </div>
+                {recentSales.length === 0 ? (
+                  <div className="p-12 text-center text-stone-500">
+                    Nenhuma venda registrada.
                   </div>
-                ))}
+                ) : (
+                  recentSales.map((sale) => (
+                    <div key={sale.id} className="p-6 flex items-center justify-between hover:bg-stone-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                          <DollarSign className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-stone-900">Pedido #{sale.id.substring(0, 8).toUpperCase()}</div>
+                          <div className="text-sm text-stone-500">{sale.products?.name} • {new Date(sale.created_at).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-stone-900">{sale.amount.toLocaleString()} Kz</div>
+                        <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">{sale.status}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -519,11 +639,10 @@ export default function ProducerDashboard() {
                   P
                 </div>
                 <div className="text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-stone-900">João Produtor</h2>
-                  <p className="text-stone-500">joao@exemplo.com</p>
+                  <h2 className="text-xl font-bold text-stone-900">{user?.email?.split('@')[0]}</h2>
+                  <p className="text-stone-500">{user?.email}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full uppercase tracking-widest">Verificado</span>
-                    <span className="px-3 py-1 bg-stone-100 text-stone-500 text-xs font-bold rounded-full uppercase tracking-widest">Nível 5</span>
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full uppercase tracking-widest">Produtor</span>
                   </div>
                 </div>
               </div>

@@ -83,7 +83,7 @@ export default function Checkout() {
         return;
       }
 
-      const platformFeeRate = 0.05; // 5% platform fee
+      const platformFeeRate = 0.10; // 10% platform fee
       const platformFee = product.price * platformFeeRate;
       const affiliateCommission = ref ? (product.price * (product.commission_rate / 100)) : 0;
       const producerAmount = product.price - affiliateCommission - platformFee;
@@ -137,7 +137,7 @@ export default function Checkout() {
         await supabase.rpc('process_sale_funds', {
           user_id_param: adminUser.id,
           amount_param: adminTotal,
-          description_param: `Taxa de plataforma + Entrega: ${product.name}`,
+          description_param: `Taxa de plataforma (10%) + Entrega: ${product.name}`,
           days_to_release: 0 // Admin gets it immediately
         });
       }
