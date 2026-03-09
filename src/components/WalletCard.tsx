@@ -19,8 +19,9 @@ interface WalletData {
 }
 
 export default function WalletCard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [pendingWithdrawalTotal, setPendingWithdrawalTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -41,14 +42,25 @@ export default function WalletCard() {
       // Release matured funds first
       await supabase.rpc('release_matured_funds', { user_id_param: user?.id });
 
-      const { data, error } = await supabase
+      const { data: walletData, error: walletError } = await supabase
         .from('wallets')
         .select('balance, pending_balance')
         .eq('user_id', user?.id)
         .single();
 
-      if (error) throw error;
-      setWallet(data);
+      if (walletError) throw walletError;
+      setWallet(walletData);
+
+      // Fetch pending withdrawals to calculate effective balance
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('withdrawal_requests')
+        .select('amount')
+        .eq('user_id', user?.id)
+        .eq('status', 'pending');
+
+      if (pendingError) throw pendingError;
+      const totalPending = pendingData?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
+      setPendingWithdrawalTotal(totalPending);
     } catch (err) {
       console.error('Error fetching wallet:', err);
     } finally {
@@ -56,18 +68,23 @@ export default function WalletCard() {
     }
   };
 
+  const isAffiliate = profile?.role === 'afiliado';
+  const withdrawalFee = isAffiliate ? 200 : 0;
+  const minWithdrawal = 500;
+  const effectiveBalance = (wallet?.balance || 0) - pendingWithdrawalTotal;
+
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !wallet) return;
 
     const amount = parseFloat(withdrawAmount);
-    if (isNaN(amount) || amount <= 0) {
-      setError('Insira um valor válido.');
+    if (isNaN(amount) || amount < minWithdrawal) {
+      setError(`O valor mínimo para saque é ${minWithdrawal.toLocaleString()} Kz.`);
       return;
     }
 
-    if (amount > wallet.balance) {
-      setError('Saldo insuficiente.');
+    if (amount > effectiveBalance) {
+      setError('Saldo insuficiente (considerando saques pendentes).');
       return;
     }
 
@@ -81,25 +98,25 @@ export default function WalletCard() {
 
     try {
       // 1. Create withdrawal request
+      // We store the total amount that will be deducted from the wallet
       const { error: requestError } = await supabase
         .from('withdrawal_requests')
         .insert({
           user_id: user.id,
           amount,
           method: withdrawMethod,
-          details: { info: withdrawDetails },
+          details: { 
+            info: withdrawDetails,
+            fee: withdrawalFee,
+            net_amount: amount - withdrawalFee
+          },
           status: 'pending'
         });
 
       if (requestError) throw requestError;
 
-      // 2. Deduct from available balance
-      const { error: updateError } = await supabase
-        .from('wallets')
-        .update({ balance: wallet.balance - amount })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
+      // Note: We NO LONGER deduct from balance here. 
+      // The deduction happens in AdminDashboard when approved.
 
       setSuccess(true);
       setTimeout(() => {
@@ -137,7 +154,7 @@ export default function WalletCard() {
             <div>
               <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Saldo Disponível</p>
               <h2 className="text-3xl font-black text-stone-900">
-                R$ {wallet?.balance.toLocaleString() || '0,00'}
+                {wallet?.balance.toLocaleString() || '0,00'} Kz
               </h2>
             </div>
           </div>
@@ -154,7 +171,7 @@ export default function WalletCard() {
           <div className="flex items-center gap-2 text-stone-500">
             <Clock className="h-4 w-4" />
             <span className="text-sm font-medium">Pendente:</span>
-            <span className="text-sm font-bold text-stone-900">R$ {wallet?.pending_balance.toLocaleString() || '0,00'}</span>
+            <span className="text-sm font-bold text-stone-900">{wallet?.pending_balance.toLocaleString() || '0,00'} Kz</span>
           </div>
           <div className="h-4 w-px bg-stone-100" />
           <div className="flex items-center gap-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
@@ -189,7 +206,7 @@ export default function WalletCard() {
                   <div>
                     <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Valor do Saque</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-stone-400">R$</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-stone-400">Kz</span>
                       <input 
                         type="number" 
                         value={withdrawAmount}
@@ -198,7 +215,15 @@ export default function WalletCard() {
                         className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none font-bold" 
                       />
                     </div>
-                    <p className="text-[10px] text-stone-400 mt-1 font-medium">Disponível: R$ {wallet?.balance.toLocaleString()}</p>
+                    <div className="flex justify-between mt-1">
+                      <p className="text-[10px] text-stone-400 font-medium">Disponível: {effectiveBalance.toLocaleString()} Kz</p>
+                      {withdrawalFee > 0 && (
+                        <p className="text-[10px] text-rose-400 font-bold">Taxa: {withdrawalFee.toLocaleString()} Kz</p>
+                      )}
+                    </div>
+                    {withdrawAmount && !isNaN(parseFloat(withdrawAmount)) && withdrawalFee > 0 && (
+                      <p className="text-[10px] text-emerald-600 mt-1 font-bold">Você receberá: {(parseFloat(withdrawAmount) - withdrawalFee).toLocaleString()} Kz</p>
+                    )}
                   </div>
 
                   <div>

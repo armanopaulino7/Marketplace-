@@ -142,7 +142,7 @@ export default function AffiliateDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Comissão Pendente', value: `R$ ${stats.pendingCommission.toFixed(2)}`, icon: DollarSign, color: 'bg-orange-50 text-orange-600' },
+                { label: 'Comissão Pendente', value: `${stats.pendingCommission.toFixed(2)} Kz`, icon: DollarSign, color: 'bg-orange-50 text-orange-600' },
                 { label: 'Cliques Totais', value: stats.totalClicks.toString(), icon: Target, color: 'bg-blue-50 text-blue-600' },
                 { label: 'Nível de Afiliado', value: stats.level, icon: Award, color: 'bg-indigo-50 text-indigo-600' },
               ].map((stat, i) => (
@@ -249,7 +249,7 @@ export default function AffiliateDashboard() {
                     </div>
                     <div className="flex-1 text-center sm:text-left">
                       <h3 className="font-bold text-stone-900 text-lg">{product.name}</h3>
-                      <p className="text-sm text-stone-500 mb-2">Produtor: {product.profiles?.email} • Preço: R$ {product.price.toLocaleString()}</p>
+                      <p className="text-sm text-stone-500 mb-2">Produtor: {product.profiles?.email} • Preço: {product.price.toLocaleString()} Kz</p>
                       <div className="flex items-center justify-center sm:justify-start gap-4">
                         <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Comissão: {product.commission_rate}%</div>
                         <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Afiliação Aberta</div>

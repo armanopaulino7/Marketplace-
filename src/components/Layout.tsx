@@ -49,7 +49,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
-          { id: 'financeiro', label: 'Financeiro', icon: Wallet },
+          { id: 'financeiro', label: 'Aprovar Solicitação de Saque', icon: Wallet },
           { id: 'aprovacao-produtos', label: 'Aprovação de Produtos', icon: CheckSquare },
           { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users },
           { id: 'taxas-entrega', label: 'Taxas de Entrega', icon: Truck },

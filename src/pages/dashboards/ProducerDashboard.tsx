@@ -166,7 +166,7 @@ export default function ProducerDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { label: 'Produtos Ativos', value: '12', icon: Package, color: 'bg-blue-50 text-blue-600' },
-                { label: 'Receita Total', value: 'R$ 12.450', icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
+                { label: 'Receita Total', value: '12.450 Kz', icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
                 { label: 'Afiliados', value: '48', icon: Users, color: 'bg-purple-50 text-purple-600' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm">
@@ -192,7 +192,7 @@ export default function ProducerDashboard() {
                       </div>
                       <div className="flex-1">
                         <div className="font-bold text-stone-900">Curso de Marketing Digital {i+1}</div>
-                        <div className="text-sm text-stone-500">R$ 197,00</div>
+                        <div className="text-sm text-stone-500">197,00 Kz</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-bold text-emerald-600">24 vendas</div>
@@ -366,7 +366,7 @@ export default function ProducerDashboard() {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-bold text-stone-700 mb-1">Preço de Venda (R$) *</label>
+                      <label className="block text-sm font-bold text-stone-700 mb-1">Preço de Venda (Kz) *</label>
                       <input 
                         required
                         type="number" 
@@ -493,7 +493,7 @@ export default function ProducerDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-stone-900">R$ 197,00</div>
+                      <div className="font-bold text-stone-900">197,00 Kz</div>
                       <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Aprovado</div>
                     </div>
                   </div>

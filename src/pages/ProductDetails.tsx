@@ -117,8 +117,8 @@ export default function ProductDetails() {
 
             <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-stone-900">R$ {product.price.toLocaleString()}</span>
-                <span className="text-stone-400 text-sm line-through">R$ {(product.price * 1.2).toLocaleString()}</span>
+                <span className="text-4xl font-black text-stone-900">{product.price.toLocaleString()} Kz</span>
+                <span className="text-stone-400 text-sm line-through">{(product.price * 1.2).toLocaleString()} Kz</span>
               </div>
 
               <div className="space-y-4">

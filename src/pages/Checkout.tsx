@@ -232,7 +232,7 @@ export default function Checkout() {
               <div className="space-y-3 pt-6 border-t border-stone-100">
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-500">Subtotal</span>
-                  <span className="font-bold text-stone-900">R$ {product.price.toLocaleString()}</span>
+                  <span className="font-bold text-stone-900">{product.price.toLocaleString()} Kz</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-500">Taxas</span>
@@ -240,7 +240,7 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between text-lg pt-3 border-t border-stone-100">
                   <span className="font-black text-stone-900">Total</span>
-                  <span className="font-black text-indigo-600">R$ {product.price.toLocaleString()}</span>
+                  <span className="font-black text-indigo-600">{product.price.toLocaleString()} Kz</span>
                 </div>
               </div>
 

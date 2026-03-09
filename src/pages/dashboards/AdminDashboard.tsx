@@ -107,6 +107,39 @@ export default function AdminDashboard() {
 
   const handleWithdrawalAction = async (withdrawalId: string, status: 'approved' | 'rejected') => {
     try {
+      if (status === 'approved') {
+        // Get withdrawal details
+        const { data: withdrawal, error: fetchError } = await supabase
+          .from('withdrawal_requests')
+          .select('*')
+          .eq('id', withdrawalId)
+          .single();
+        
+        if (fetchError) throw fetchError;
+
+        // Get current wallet balance
+        const { data: wallet, error: walletFetchError } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', withdrawal.user_id)
+          .single();
+        
+        if (walletFetchError) throw walletFetchError;
+
+        if (wallet.balance < withdrawal.amount) {
+          alert('Usuário não possui saldo suficiente para este saque.');
+          return;
+        }
+
+        // Deduct from wallet
+        const { error: walletUpdateError } = await supabase
+          .from('wallets')
+          .update({ balance: wallet.balance - withdrawal.amount })
+          .eq('user_id', withdrawal.user_id);
+        
+        if (walletUpdateError) throw walletUpdateError;
+      }
+
       const { error } = await supabase
         .from('withdrawal_requests')
         .update({ status })
@@ -137,7 +170,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600', trend: '+12%', trendUp: true },
-                { label: 'Vendas Mensais', value: `R$ ${stats.sales.toLocaleString()}`, icon: BarChart3, color: 'bg-emerald-50 text-emerald-600', trend: '+8%', trendUp: true },
+                { label: 'Vendas Mensais', value: `${stats.sales.toLocaleString()} Kz`, icon: BarChart3, color: 'bg-emerald-50 text-emerald-600', trend: '+8%', trendUp: true },
                 { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600', trend: '-2%', trendUp: false },
                 { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600', trend: '+5', trendUp: true },
               ].map((stat, i) => (
@@ -213,9 +246,15 @@ export default function AdminDashboard() {
                           <Wallet className="h-6 w-6" />
                         </div>
                         <div>
-                          <div className="font-bold text-stone-900">R$ {withdrawal.amount.toLocaleString()}</div>
+                          <div className="font-bold text-stone-900">{withdrawal.amount.toLocaleString()} Kz</div>
                           <div className="text-xs text-stone-500">{withdrawal.profiles?.email} • {withdrawal.method}</div>
                           <div className="text-[10px] font-mono text-stone-400 mt-1">{withdrawal.details?.info}</div>
+                          {withdrawal.details?.fee > 0 && (
+                            <div className="mt-1 flex gap-2">
+                              <span className="text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold">Taxa: {withdrawal.details.fee} Kz</span>
+                              <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-bold">Líquido: {withdrawal.details.net_amount} Kz</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -289,7 +328,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex-1 text-center sm:text-left">
                       <h3 className="font-bold text-stone-900 text-lg">{product.name}</h3>
-                      <p className="text-sm text-stone-500">Produtor: {product.profiles?.email} • R$ {product.price.toLocaleString()}</p>
+                      <p className="text-sm text-stone-500">Produtor: {product.profiles?.email} • {product.price.toLocaleString()} Kz</p>
                       <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-2">
                         <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-lg">{product.category}</span>
                         <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">{product.subcategory}</span>
@@ -363,15 +402,15 @@ export default function AdminDashboard() {
             <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
               <div className="relative z-10">
                 <p className="text-indigo-100 text-sm font-medium mb-1">Saldo Total em Custódia</p>
-                <h2 className="text-4xl font-black">R$ 1.245.850,00</h2>
+                <h2 className="text-4xl font-black">1.245.850,00 Kz</h2>
                 <div className="mt-6 flex gap-4">
                   <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl flex-1">
                     <p className="text-[10px] uppercase font-bold text-indigo-200">Comissões ADM</p>
-                    <p className="text-lg font-bold">R$ 84.200,00</p>
+                    <p className="text-lg font-bold">84.200,00 Kz</p>
                   </div>
                   <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl flex-1">
                     <p className="text-[10px] uppercase font-bold text-indigo-200">Taxas de Processamento</p>
-                    <p className="text-lg font-bold">R$ 12.450,00</p>
+                    <p className="text-lg font-bold">12.450,00 Kz</p>
                   </div>
                 </div>
               </div>
@@ -391,7 +430,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex-1 text-center sm:text-left">
                     <div className="flex items-center justify-center sm:justify-start gap-2">
-                      <h3 className="font-bold text-stone-900">R$ 1.500,00</h3>
+                      <h3 className="font-bold text-stone-900">1.500,00 Kz</h3>
                       <span className="px-2 py-0.5 bg-stone-100 text-stone-500 text-[10px] font-bold rounded uppercase">Pendente</span>
                     </div>
                     <p className="text-sm text-stone-500">Solicitado por: produtor@exemplo.com • Há 2 dias</p>
@@ -421,11 +460,11 @@ export default function AdminDashboard() {
               <div className="space-y-4 max-w-md">
                 <div>
                   <label className="block text-sm font-bold text-stone-700 mb-1">Taxa Fixa Nacional</label>
-                  <input type="text" defaultValue="R$ 15,00" className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <input type="text" defaultValue="15,00 Kz" className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-stone-700 mb-1">Taxa por Região (SP/RJ)</label>
-                  <input type="text" defaultValue="R$ 10,00" className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <input type="text" defaultValue="10,00 Kz" className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
                 <button className="w-full bg-stone-900 text-white py-3 rounded-2xl font-bold hover:bg-stone-800 transition-all">Salvar Alterações</button>
               </div>

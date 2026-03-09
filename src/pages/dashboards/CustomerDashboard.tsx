@@ -185,7 +185,7 @@ export default function CustomerDashboard() {
                             </div>
                           )}
                           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-black text-indigo-600 shadow-sm">
-                            R$ {product.price.toLocaleString()}
+                            {product.price.toLocaleString()} Kz
                           </div>
                           <div className="absolute bottom-3 left-3">
                             <span className="px-2 py-1 bg-stone-900/60 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg uppercase tracking-wider">
@@ -230,7 +230,7 @@ export default function CustomerDashboard() {
                         <p className="text-sm text-stone-500">Curso de Fotografia Profissional • 12/02/2024</p>
                         <div className="mt-1 flex items-center gap-2">
                           <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded uppercase">Concluído</span>
-                          <span className="text-[10px] text-stone-400 font-bold">R$ 297,00</span>
+                          <span className="text-[10px] text-stone-400 font-bold">297,00 Kz</span>
                         </div>
                       </div>
                     </div>
