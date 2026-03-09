@@ -11,6 +11,8 @@ import AdminDashboard from './pages/dashboards/AdminDashboard';
 import ProducerDashboard from './pages/dashboards/ProducerDashboard';
 import AffiliateDashboard from './pages/dashboards/AffiliateDashboard';
 import CustomerDashboard from './pages/dashboards/CustomerDashboard';
+import ProductDetails from './pages/ProductDetails';
+import Checkout from './pages/Checkout';
 
 function ConfigWarning() {
   return (
@@ -48,6 +50,8 @@ export default function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/checkout/:id" element={<Checkout />} />
           
           {/* Protected Dashboard Routes */}
           <Route path="/dashboard/adm" element={

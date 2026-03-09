@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/Layout';
 import { 
   Link as LinkIcon, 
@@ -13,17 +13,118 @@ import {
   ExternalLink,
   Copy,
   CheckCircle2,
-  ShoppingBag
+  ShoppingBag,
+  Clock,
+  Package,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function AffiliateDashboard() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [copied, setCopied] = useState<number | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [myAffiliations, setMyAffiliations] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    pendingCommission: 0,
+    totalClicks: 0,
+    level: 'Bronze'
+  });
 
-  const handleCopy = (id: number) => {
+  useEffect(() => {
+    if (user) {
+      fetchAvailableProducts();
+      fetchMyAffiliations();
+    }
+  }, [user, activeTab]);
+
+  const fetchAvailableProducts = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // Get all approved products
+      const { data: products, error: pError } = await supabase
+        .from('products')
+        .select('*, profiles(email)')
+        .eq('status', 'approved');
+
+      if (pError) throw pError;
+
+      // Get user's current affiliations
+      const { data: affiliations, error: aError } = await supabase
+        .from('affiliations')
+        .select('product_id')
+        .eq('affiliate_id', user.id);
+
+      if (aError) throw aError;
+
+      const affiliatedIds = new Set(affiliations?.map(a => a.product_id));
+      
+      // Filter products the user is NOT affiliated with
+      setAvailableProducts(products?.filter(p => !affiliatedIds.has(p.id)) || []);
+    } catch (err) {
+      console.error('Error fetching available products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMyAffiliations = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('affiliations')
+        .select('*, products(*, profiles(email))')
+        .eq('affiliate_id', user.id)
+        .eq('status', 'approved');
+
+      if (error) throw error;
+      setMyAffiliations(data || []);
+    } catch (err) {
+      console.error('Error fetching my affiliations:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAffiliateRequest = async (productId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('affiliations')
+        .insert({
+          product_id: productId,
+          affiliate_id: user.id,
+          status: 'approved' // Auto-approving for now as per simple flow
+        });
+
+      if (error) throw error;
+      
+      // Refresh lists
+      fetchAvailableProducts();
+      fetchMyAffiliations();
+      setActiveTab('sou-afiliado');
+    } catch (err) {
+      console.error('Error requesting affiliation:', err);
+      alert('Erro ao solicitar afiliação.');
+    }
+  };
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const getAffiliateLink = (productId: string, type: 'sales' | 'checkout') => {
+    const baseUrl = window.location.origin;
+    const path = type === 'sales' ? `/product/${productId}` : `/checkout/${productId}`;
+    return `${baseUrl}${path}?ref=${user?.id}`;
   };
 
   const renderContent = () => {
@@ -38,9 +139,9 @@ export default function AffiliateDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Comissão Pendente', value: 'R$ 850,00', icon: DollarSign, color: 'bg-orange-50 text-orange-600' },
-                { label: 'Cliques Totais', value: '1,420', icon: Target, color: 'bg-blue-50 text-blue-600' },
-                { label: 'Nível de Afiliado', value: 'Prata', icon: Award, color: 'bg-indigo-50 text-indigo-600' },
+                { label: 'Comissão Pendente', value: `R$ ${stats.pendingCommission.toFixed(2)}`, icon: DollarSign, color: 'bg-orange-50 text-orange-600' },
+                { label: 'Cliques Totais', value: stats.totalClicks.toString(), icon: Target, color: 'bg-blue-50 text-blue-600' },
+                { label: 'Nível de Afiliado', value: stats.level, icon: Award, color: 'bg-indigo-50 text-indigo-600' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
@@ -55,21 +156,25 @@ export default function AffiliateDashboard() {
             </div>
 
             <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6">
-              <h2 className="text-lg font-bold text-stone-900 mb-6">Produtos em Destaque</h2>
+              <h2 className="text-lg font-bold text-stone-900 mb-6">Sugestões para Você</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[1, 2].map((_, i) => (
-                  <div key={i} className="p-5 border border-stone-100 rounded-3xl hover:border-indigo-200 transition-all group bg-stone-50/50">
+                {availableProducts.slice(0, 2).map((product) => (
+                  <div key={product.id} className="p-5 border border-stone-100 rounded-3xl hover:border-indigo-200 transition-all group bg-stone-50/50">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="h-14 w-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-stone-400 group-hover:text-indigo-600 transition-colors">
-                        <LinkIcon className="h-7 w-7" />
+                      <div className="h-14 w-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-stone-400 group-hover:text-indigo-600 transition-colors overflow-hidden">
+                        {product.images?.[0] ? (
+                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <LinkIcon className="h-7 w-7" />
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] text-stone-400 uppercase font-bold tracking-widest">Comissão</div>
-                        <div className="text-xl font-black text-emerald-600">50%</div>
+                        <div className="text-xl font-black text-emerald-600">{product.commission_rate}%</div>
                       </div>
                     </div>
-                    <h3 className="font-bold text-stone-900 text-lg mb-1">Ebook: Guia de Investimentos {i+1}</h3>
-                    <p className="text-sm text-stone-500 mb-6 line-clamp-2">Aprenda a investir do zero com este guia completo e prático para iniciantes.</p>
+                    <h3 className="font-bold text-stone-900 text-lg mb-1 line-clamp-1">{product.name}</h3>
+                    <p className="text-sm text-stone-500 mb-6 line-clamp-2">{product.description}</p>
                     <button 
                       onClick={() => setActiveTab('afiliar-me')}
                       className="w-full py-3 bg-white text-stone-700 border border-stone-200 rounded-2xl font-bold group-hover:bg-indigo-600 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center gap-2"
@@ -79,6 +184,11 @@ export default function AffiliateDashboard() {
                     </button>
                   </div>
                 ))}
+                {availableProducts.length === 0 && (
+                  <div className="col-span-2 py-8 text-center text-stone-400">
+                    Nenhum produto novo disponível para afiliação.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -91,82 +201,161 @@ export default function AffiliateDashboard() {
               <HomeIcon className="h-16 w-16 text-stone-200 mx-auto" />
               <h2 className="text-xl font-bold text-stone-900">Mercado de Afiliação</h2>
               <p className="text-stone-500 max-w-md mx-auto">Explore todos os produtos disponíveis no marketplace para afiliação.</p>
-              <button className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all">Explorar Produtos</button>
+              <button 
+                onClick={() => setActiveTab('afiliar-me')}
+                className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+              >
+                Explorar Produtos
+              </button>
             </div>
           </div>
         );
       case 'afiliar-me':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Afiliar-me</h1>
-            <div className="grid grid-cols-1 gap-4">
-              {[1, 2, 3].map((_, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 flex flex-col sm:flex-row items-center gap-6">
-                  <div className="h-24 w-24 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400">
-                    <ShoppingBag className="h-10 w-10" />
-                  </div>
-                  <div className="flex-1 text-center sm:text-left">
-                    <h3 className="font-bold text-stone-900 text-lg">Curso de Fotografia Profissional {i+1}</h3>
-                    <p className="text-sm text-stone-500 mb-2">Produtor: foto@exemplo.com • Preço: R$ 297,00</p>
-                    <div className="flex items-center justify-center sm:justify-start gap-4">
-                      <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Comissão: R$ 148,50</div>
-                      <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Afiliação Aberta</div>
-                    </div>
-                  </div>
-                  <button className="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                    <UserPlus className="h-5 w-5" />
-                    Solicitar Afiliação
-                  </button>
-                </div>
-              ))}
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-stone-900">Afiliar-me</h1>
+              <button 
+                onClick={fetchAvailableProducts}
+                className="p-2 text-stone-400 hover:text-indigo-600 transition-colors"
+              >
+                <Clock className={loading ? "animate-spin" : ""} />
+              </button>
             </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+              </div>
+            ) : availableProducts.length === 0 ? (
+              <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4">
+                <Package className="h-16 w-16 text-stone-100 mx-auto" />
+                <h2 className="text-xl font-bold text-stone-900">Nenhum produto disponível</h2>
+                <p className="text-stone-500">Você já se afiliou a todos os produtos disponíveis ou não há produtos aprovados.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {availableProducts.map((product) => (
+                  <div key={product.id} className="bg-white p-6 rounded-3xl border border-stone-200 flex flex-col sm:flex-row items-center gap-6">
+                    <div className="h-24 w-24 bg-stone-100 rounded-2xl flex items-center justify-center overflow-hidden">
+                      {product.images?.[0] ? (
+                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <ShoppingBag className="h-10 w-10 text-stone-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="font-bold text-stone-900 text-lg">{product.name}</h3>
+                      <p className="text-sm text-stone-500 mb-2">Produtor: {product.profiles?.email} • Preço: R$ {product.price.toLocaleString()}</p>
+                      <div className="flex items-center justify-center sm:justify-start gap-4">
+                        <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Comissão: {product.commission_rate}%</div>
+                        <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Afiliação Aberta</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleAffiliateRequest(product.id)}
+                      className="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <UserPlus className="h-5 w-5" />
+                      Afiliar-se Agora
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       case 'sou-afiliado':
         return (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900">Produtos que sou Afiliado</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((_, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                      <CheckCircle2 className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-stone-900">Curso de Gastronomia</h3>
-                      <p className="text-xs text-stone-500">Afiliação aprovada em 10/01/2024</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Seu Link de Divulgação</label>
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-stone-50 px-4 py-3 rounded-xl border border-stone-100 text-sm text-stone-600 truncate font-mono">
-                        https://mktp.com/ref/user123_prod{i}
-                      </div>
-                      <button 
-                        onClick={() => handleCopy(i)}
-                        className={cn(
-                          "p-3 rounded-xl transition-all flex items-center justify-center",
-                          copied === i ? "bg-emerald-500 text-white" : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+            
+            {myAffiliations.length === 0 ? (
+              <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4">
+                <Target className="h-16 w-16 text-stone-100 mx-auto" />
+                <h2 className="text-xl font-bold text-stone-900">Nenhuma afiliação ativa</h2>
+                <p className="text-stone-500">Vá para a aba "Afiliar-me" para começar a promover produtos.</p>
+                <button 
+                  onClick={() => setActiveTab('afiliar-me')}
+                  className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+                >
+                  Ver Produtos Disponíveis
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {myAffiliations.map((aff) => (
+                  <div key={aff.id} className="bg-white p-6 rounded-3xl border border-stone-200 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 overflow-hidden">
+                        {aff.products?.images?.[0] ? (
+                          <img src={aff.products.images[0]} alt={aff.products.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <CheckCircle2 className="h-6 w-6" />
                         )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-stone-900 line-clamp-1">{aff.products?.name}</h3>
+                        <p className="text-xs text-stone-500">Comissão: {aff.products?.commission_rate}%</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Link da Página de Vendas</label>
+                        <div className="flex gap-2">
+                          <div className="flex-1 bg-stone-50 px-3 py-2.5 rounded-xl border border-stone-100 text-[10px] text-stone-600 truncate font-mono">
+                            {getAffiliateLink(aff.product_id, 'sales')}
+                          </div>
+                          <button 
+                            onClick={() => handleCopy(getAffiliateLink(aff.product_id, 'sales'), `${aff.id}-sales`)}
+                            className={cn(
+                              "p-2.5 rounded-xl transition-all flex items-center justify-center",
+                              copied === `${aff.id}-sales` ? "bg-emerald-500 text-white" : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                            )}
+                          >
+                            {copied === `${aff.id}-sales` ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Link de Checkout Direto</label>
+                        <div className="flex gap-2">
+                          <div className="flex-1 bg-stone-50 px-3 py-2.5 rounded-xl border border-stone-100 text-[10px] text-stone-600 truncate font-mono">
+                            {getAffiliateLink(aff.product_id, 'checkout')}
+                          </div>
+                          <button 
+                            onClick={() => handleCopy(getAffiliateLink(aff.product_id, 'checkout'), `${aff.id}-checkout`)}
+                            className={cn(
+                              "p-2.5 rounded-xl transition-all flex items-center justify-center",
+                              copied === `${aff.id}-checkout` ? "bg-emerald-500 text-white" : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                            )}
+                          >
+                            {copied === `${aff.id}-checkout` ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <a 
+                        href={getAffiliateLink(aff.product_id, 'sales')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2.5 bg-stone-900 text-white rounded-xl font-bold text-xs hover:bg-stone-800 transition-all flex items-center justify-center gap-2"
                       >
-                        {copied === i ? <CheckCircle2 className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                        <ExternalLink className="h-4 w-4" />
+                        Testar Link
+                      </a>
+                      <button className="flex-1 py-2.5 border border-stone-200 text-stone-700 rounded-xl font-bold text-xs hover:bg-stone-50 transition-all">
+                        Material de Apoio
                       </button>
                     </div>
                   </div>
-                  <div className="flex gap-2 pt-2">
-                    <button className="flex-1 py-2.5 bg-stone-900 text-white rounded-xl font-bold text-xs hover:bg-stone-800 transition-all flex items-center justify-center gap-2">
-                      <ExternalLink className="h-4 w-4" />
-                      Página de Vendas
-                    </button>
-                    <button className="flex-1 py-2.5 border border-stone-200 text-stone-700 rounded-xl font-bold text-xs hover:bg-stone-50 transition-all">
-                      Material de Apoio
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       case 'carteira':

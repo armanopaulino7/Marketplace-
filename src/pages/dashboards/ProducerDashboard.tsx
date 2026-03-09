@@ -337,11 +337,11 @@ export default function ProducerDashboard() {
                   </div>
 
                   <div className="space-y-4">
-                    {Object.entries(formData.variations).map(([type, values]) => values.length > 0 && (
+                    {Object.entries(formData.variations).map(([type, values]) => (values as string[]).length > 0 && (
                       <div key={type} className="space-y-2">
                         <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">{type}</p>
                         <div className="flex flex-wrap gap-2">
-                          {values.map((val, idx) => (
+                          {(values as string[]).map((val, idx) => (
                             <span key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 text-stone-700 rounded-xl text-sm font-bold">
                               {val}
                               <button type="button" onClick={() => removeVariation(type, idx)} className="text-stone-400 hover:text-rose-500">
