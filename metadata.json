@@ -1,0 +1,5 @@
+{
+  "name": "Marketplace Multi-Role",
+  "description": "Um marketplace simples com quatro tipos de contas: ADM, Produtor, Afiliado e Cliente.",
+  "requestFramePermissions": []
+}
