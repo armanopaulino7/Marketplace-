@@ -24,7 +24,10 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [pendingProducts, setPendingProducts] = useState<any[]>([]);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
+  const [deliveryFees, setDeliveryFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [newFee, setNewFee] = useState({ neighborhood: '', fee: '' });
+  const [editingFee, setEditingFee] = useState<any>(null);
   const [stats, setStats] = useState({
     users: 0,
     sales: 0,
@@ -36,7 +39,82 @@ export default function AdminDashboard() {
     fetchPendingProducts();
     fetchPendingWithdrawals();
     fetchStats();
+    fetchDeliveryFees();
   }, []);
+
+  const fetchDeliveryFees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('delivery_fees')
+        .select('*')
+        .order('neighborhood', { ascending: true });
+      
+      if (error) throw error;
+      setDeliveryFees(data || []);
+    } catch (err) {
+      console.error('Error fetching delivery fees:', err);
+    }
+  };
+
+  const handleAddDeliveryFee = async () => {
+    if (!newFee.neighborhood || !newFee.fee) return;
+    
+    try {
+      const { error } = await supabase
+        .from('delivery_fees')
+        .insert([{ 
+          neighborhood: newFee.neighborhood, 
+          fee: parseFloat(newFee.fee) 
+        }]);
+
+      if (error) throw error;
+      
+      setNewFee({ neighborhood: '', fee: '' });
+      fetchDeliveryFees();
+    } catch (err) {
+      console.error('Error adding delivery fee:', err);
+      alert('Erro ao adicionar taxa de entrega. Verifique se o bairro já existe.');
+    }
+  };
+
+  const handleUpdateDeliveryFee = async () => {
+    if (!editingFee) return;
+
+    try {
+      const { error } = await supabase
+        .from('delivery_fees')
+        .update({ 
+          neighborhood: editingFee.neighborhood, 
+          fee: parseFloat(editingFee.fee) 
+        })
+        .eq('id', editingFee.id);
+
+      if (error) throw error;
+      
+      setEditingFee(null);
+      fetchDeliveryFees();
+    } catch (err) {
+      console.error('Error updating delivery fee:', err);
+      alert('Erro ao atualizar taxa de entrega.');
+    }
+  };
+
+  const handleDeleteDeliveryFee = async (id: string) => {
+    if (!confirm('Tem certeza que deseja remover esta taxa?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('delivery_fees')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchDeliveryFees();
+    } catch (err) {
+      console.error('Error deleting delivery fee:', err);
+      alert('Erro ao remover taxa de entrega.');
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -446,28 +524,112 @@ export default function AdminDashboard() {
       case 'taxas-entrega':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Taxas de Entrega</h1>
+            <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-bold text-stone-900">Taxas de Entrega</h1>
+              <p className="text-stone-500">Gerencie os valores de entrega por bairro.</p>
+            </div>
+
             <div className="bg-white p-8 rounded-3xl border border-stone-200">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
-                  <Truck className="h-6 w-6" />
+              <h2 className="text-lg font-bold text-stone-900 mb-6">
+                {editingFee ? 'Editar Taxa' : 'Adicionar Novo Bairro'}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-1">
+                  <label className="block text-sm font-bold text-stone-700 mb-1">Bairro</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Talatona"
+                    value={editingFee ? editingFee.neighborhood : newFee.neighborhood}
+                    onChange={(e) => editingFee 
+                      ? setEditingFee({...editingFee, neighborhood: e.target.value})
+                      : setNewFee({...newFee, neighborhood: e.target.value})
+                    }
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  />
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-stone-900">Configuração de Logística</h2>
-                  <p className="text-sm text-stone-500">Defina as taxas padrão para produtos físicos.</p>
+                <div className="sm:col-span-1">
+                  <label className="block text-sm font-bold text-stone-700 mb-1">Taxa (Kz)</label>
+                  <input 
+                    type="number" 
+                    placeholder="Ex: 1500"
+                    value={editingFee ? editingFee.fee : newFee.fee}
+                    onChange={(e) => editingFee
+                      ? setEditingFee({...editingFee, fee: e.target.value})
+                      : setNewFee({...newFee, fee: e.target.value})
+                    }
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  />
+                </div>
+                <div className="sm:col-span-1 flex items-end gap-2">
+                  {editingFee ? (
+                    <>
+                      <button 
+                        onClick={handleUpdateDeliveryFee}
+                        className="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+                      >
+                        Salvar
+                      </button>
+                      <button 
+                        onClick={() => setEditingFee(null)}
+                        className="flex-1 bg-stone-100 text-stone-600 py-3 rounded-2xl font-bold hover:bg-stone-200 transition-all"
+                      >
+                        Cancelar
+                      </button>
+                    </>
+                  ) : (
+                    <button 
+                      onClick={handleAddDeliveryFee}
+                      className="w-full bg-stone-900 text-white py-3 rounded-2xl font-bold hover:bg-stone-800 transition-all"
+                    >
+                      Adicionar
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="space-y-4 max-w-md">
-                <div>
-                  <label className="block text-sm font-bold text-stone-700 mb-1">Taxa Fixa Nacional</label>
-                  <input type="text" defaultValue="15,00 Kz" className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-stone-700 mb-1">Taxa por Região (SP/RJ)</label>
-                  <input type="text" defaultValue="10,00 Kz" className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                </div>
-                <button className="w-full bg-stone-900 text-white py-3 rounded-2xl font-bold hover:bg-stone-800 transition-all">Salvar Alterações</button>
-              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-stone-50 border-b border-stone-100">
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Bairro</th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Taxa</th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {deliveryFees.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-12 text-center text-stone-500">
+                        Nenhuma taxa de entrega cadastrada.
+                      </td>
+                    </tr>
+                  ) : (
+                    deliveryFees.map((fee) => (
+                      <tr key={fee.id} className="hover:bg-stone-50 transition-colors">
+                        <td className="px-6 py-4 font-bold text-stone-900">{fee.neighborhood}</td>
+                        <td className="px-6 py-4 text-stone-600">{fee.fee.toLocaleString()} Kz</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => setEditingFee({ ...fee, fee: fee.fee.toString() })}
+                              className="text-indigo-600 font-bold text-sm hover:underline"
+                            >
+                              Editar
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteDeliveryFee(fee.id)}
+                              className="text-rose-600 font-bold text-sm hover:underline"
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         );

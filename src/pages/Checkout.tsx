@@ -9,7 +9,8 @@ import {
   Lock, 
   CheckCircle2,
   Package,
-  AlertCircle
+  AlertCircle,
+  Truck
 } from 'lucide-react';
 
 export default function Checkout() {
@@ -18,6 +19,9 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [product, setProduct] = useState<any>(null);
+  const [deliveryFees, setDeliveryFees] = useState<any[]>([]);
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
+  const [selectedFee, setSelectedFee] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -25,7 +29,28 @@ export default function Checkout() {
 
   useEffect(() => {
     fetchProduct();
+    fetchDeliveryFees();
   }, [id]);
+
+  const fetchDeliveryFees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('delivery_fees')
+        .select('*')
+        .order('neighborhood', { ascending: true });
+      
+      if (error) throw error;
+      setDeliveryFees(data || []);
+    } catch (err) {
+      console.error('Error fetching delivery fees:', err);
+    }
+  };
+
+  const handleNeighborhoodChange = (neighborhood: string) => {
+    setSelectedNeighborhood(neighborhood);
+    const fee = deliveryFees.find(f => f.neighborhood === neighborhood)?.fee || 0;
+    setSelectedFee(fee);
+  };
 
   const fetchProduct = async () => {
     try {
@@ -52,10 +77,17 @@ export default function Checkout() {
 
     setProcessing(true);
     try {
+      if (!selectedNeighborhood && deliveryFees.length > 0) {
+        alert('Por favor, selecione um bairro para entrega.');
+        setProcessing(false);
+        return;
+      }
+
       const platformFeeRate = 0.05; // 5% platform fee
       const platformFee = product.price * platformFeeRate;
       const affiliateCommission = ref ? (product.price * (product.commission_rate / 100)) : 0;
       const producerAmount = product.price - affiliateCommission - platformFee;
+      const totalOrderAmount = product.price + selectedFee;
 
       // 1. Create Order
       const { data: order, error: orderError } = await supabase
@@ -65,7 +97,9 @@ export default function Checkout() {
           customer_id: user.id,
           producer_id: product.producer_id,
           affiliate_id: ref || null,
-          amount: product.price,
+          amount: totalOrderAmount,
+          delivery_fee: selectedFee,
+          neighborhood: selectedNeighborhood,
           commission_amount: affiliateCommission,
           status: 'completed'
         })
@@ -90,8 +124,7 @@ export default function Checkout() {
         });
       }
 
-      // 4. Update Admin Wallet (Available immediately or pending? Let's say available for platform)
-      // We need to find the admin user. For simplicity, we'll use a fixed ID or just skip for now if not found.
+      // 4. Update Admin Wallet (Available immediately)
       const { data: adminUser } = await supabase
         .from('profiles')
         .select('id')
@@ -100,10 +133,11 @@ export default function Checkout() {
         .single();
 
       if (adminUser) {
+        const adminTotal = platformFee + selectedFee;
         await supabase.rpc('process_sale_funds', {
           user_id_param: adminUser.id,
-          amount_param: platformFee,
-          description_param: `Taxa de plataforma: ${product.name}`,
+          amount_param: adminTotal,
+          description_param: `Taxa de plataforma + Entrega: ${product.name}`,
           days_to_release: 0 // Admin gets it immediately
         });
       }
@@ -159,6 +193,34 @@ export default function Checkout() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Checkout Form */}
           <div className="space-y-6">
+            <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
+              <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+                <Truck className="h-5 w-5 text-indigo-600" />
+                Entrega
+              </h2>
+              
+              <div>
+                <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Selecione seu Bairro</label>
+                <select 
+                  value={selectedNeighborhood}
+                  onChange={(e) => handleNeighborhoodChange(e.target.value)}
+                  className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
+                >
+                  <option value="">Escolha um bairro...</option>
+                  {deliveryFees.map((fee) => (
+                    <option key={fee.id} value={fee.neighborhood}>
+                      {fee.neighborhood} (+{fee.fee.toLocaleString()} Kz)
+                    </option>
+                  ))}
+                </select>
+                {selectedNeighborhood && (
+                  <p className="mt-2 text-xs text-emerald-600 font-bold">
+                    Taxa de entrega: {selectedFee.toLocaleString()} Kz
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
               <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-indigo-600" />
@@ -235,12 +297,14 @@ export default function Checkout() {
                   <span className="font-bold text-stone-900">{product.price.toLocaleString()} Kz</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">Taxas</span>
-                  <span className="font-bold text-stone-900 text-emerald-600">Grátis</span>
+                  <span className="text-stone-500">Taxa de Entrega</span>
+                  <span className="font-bold text-stone-900">
+                    {selectedFee > 0 ? `${selectedFee.toLocaleString()} Kz` : 'Selecione o bairro'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-lg pt-3 border-t border-stone-100">
                   <span className="font-black text-stone-900">Total</span>
-                  <span className="font-black text-indigo-600">{product.price.toLocaleString()} Kz</span>
+                  <span className="font-black text-indigo-600">{(product.price + selectedFee).toLocaleString()} Kz</span>
                 </div>
               </div>
 
