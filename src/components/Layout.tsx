@@ -1,55 +1,183 @@
-import React from 'react';
-import { LogOut, LayoutDashboard, User, Settings, ShoppingBag } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  LogOut, 
+  LayoutDashboard, 
+  User, 
+  ShoppingBag, 
+  Home, 
+  CheckSquare, 
+  Users, 
+  Wallet, 
+  Clock, 
+  Truck, 
+  PlusCircle, 
+  ClipboardList, 
+  UserPlus, 
+  Link as LinkIcon,
+  Menu,
+  X
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '../lib/utils';
 
-export function Layout({ children }: { children: React.ReactNode }) {
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+interface LayoutProps {
+  children: React.ReactNode;
+  activeTab: string;
+  setActiveTab: (id: string) => void;
+}
+
+export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
   };
 
+  const getMenuItems = (): MenuItem[] => {
+    switch (profile?.role) {
+      case 'adm':
+        return [
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'home', label: 'Home', icon: Home },
+          { id: 'aprovacao-produtos', label: 'Aprovação de Produtos', icon: CheckSquare },
+          { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users },
+          { id: 'carteira', label: 'Carteira', icon: Wallet },
+          { id: 'aprovacao-saque', label: 'Aprovar Solicitação de Saque', icon: Clock },
+          { id: 'taxas-entrega', label: 'Taxas de Entrega', icon: Truck },
+          { id: 'perfil', label: 'Perfil', icon: User },
+        ];
+      case 'produtor':
+        return [
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'home', label: 'Home', icon: Home },
+          { id: 'cadastrar-produto', label: 'Cadastrar Produto', icon: PlusCircle },
+          { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
+          { id: 'carteira', label: 'Carteira', icon: Wallet },
+          { id: 'perfil', label: 'Perfil', icon: User },
+        ];
+      case 'afiliado':
+        return [
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'home', label: 'Home', icon: Home },
+          { id: 'afiliar-me', label: 'Afiliar-me', icon: UserPlus },
+          { id: 'sou-afiliado', label: 'Sou Afiliado', icon: LinkIcon },
+          { id: 'carteira', label: 'Carteira', icon: Wallet },
+          { id: 'perfil', label: 'Perfil', icon: User },
+        ];
+      case 'cliente':
+        return [
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'home', label: 'Home', icon: Home },
+          { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
+          { id: 'perfil', label: 'Perfil', icon: User },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const menuItems = getMenuItems();
+
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col">
-      <header className="bg-white border-b border-stone-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="h-6 w-6 text-indigo-600" />
-              <span className="font-bold text-xl tracking-tight text-stone-900">Marketplace</span>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex flex-col items-end mr-2">
-                <span className="text-sm font-medium text-stone-900">{profile?.email}</span>
-                <span className="text-xs text-stone-500 uppercase tracking-wider font-semibold">
-                  {profile?.role}
-                </span>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="p-2 rounded-full hover:bg-stone-100 text-stone-600 transition-colors"
-                title="Sair"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-stone-200 h-16 flex items-center justify-between px-4 sticky top-0 z-30">
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="h-6 w-6 text-indigo-600" />
+          <span className="font-bold text-lg text-stone-900">Marketplace</span>
         </div>
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 text-stone-600 hover:bg-stone-100 rounded-xl"
+        >
+          {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
+      {/* Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      <footer className="bg-white border-t border-stone-200 py-6">
-        <div className="max-w-7xl mx-auto px-4 text-center text-stone-500 text-sm">
-          &copy; {new Date().getFullYear()} Marketplace Multi-Role. Todos os direitos reservados.
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 w-64 bg-white border-r border-stone-200 z-50 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="h-full flex flex-col">
+          <div className="h-16 hidden md:flex items-center px-6 border-b border-stone-100">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="h-6 w-6 text-indigo-600" />
+              <span className="font-bold text-xl text-stone-900">Marketplace</span>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsSidebarOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all",
+                  activeTab === item.id
+                    ? "bg-indigo-50 text-indigo-600 shadow-sm shadow-indigo-100"
+                    : "text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+                )}
+              >
+                <item.icon className={cn("h-5 w-5", activeTab === item.id ? "text-indigo-600" : "text-stone-400")} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-4 border-t border-stone-100">
+            <div className="bg-stone-50 rounded-2xl p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                  {profile?.email?.[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-stone-900 truncate">{profile?.email}</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider font-semibold">{profile?.role}</p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-all"
+            >
+              <LogOut className="h-5 w-5" />
+              Sair da Conta
+            </button>
+          </div>
         </div>
-      </footer>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {children}
+        </div>
+        <footer className="py-8 px-4 text-center text-stone-400 text-xs">
+          &copy; {new Date().getFullYear()} Marketplace Multi-Role. Todos os direitos reservados.
+        </footer>
+      </main>
     </div>
   );
 }

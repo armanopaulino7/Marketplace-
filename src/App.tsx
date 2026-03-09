@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { Layout } from './components/Layout';
 import { isSupabaseConfigured } from './lib/supabase';
 import { AlertTriangle } from 'lucide-react';
 
@@ -53,33 +52,25 @@ export default function App() {
           {/* Protected Dashboard Routes */}
           <Route path="/dashboard/adm" element={
             <ProtectedRoute allowedRoles={['adm']}>
-              <Layout>
-                <AdminDashboard />
-              </Layout>
+              <AdminDashboard />
             </ProtectedRoute>
           } />
           
           <Route path="/dashboard/produtor" element={
             <ProtectedRoute allowedRoles={['produtor']}>
-              <Layout>
-                <ProducerDashboard />
-              </Layout>
+              <ProducerDashboard />
             </ProtectedRoute>
           } />
           
           <Route path="/dashboard/afiliado" element={
             <ProtectedRoute allowedRoles={['afiliado']}>
-              <Layout>
-                <AffiliateDashboard />
-              </Layout>
+              <AffiliateDashboard />
             </ProtectedRoute>
           } />
           
           <Route path="/dashboard/cliente" element={
             <ProtectedRoute allowedRoles={['cliente']}>
-              <Layout>
-                <CustomerDashboard />
-              </Layout>
+              <CustomerDashboard />
             </ProtectedRoute>
           } />
 

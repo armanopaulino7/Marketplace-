@@ -19,7 +19,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Session error:', error.message);
+        // If session is invalid, clear everything
+        supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -29,11 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for changes on auth state (logged in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
+        setUser(session.user);
         fetchProfile(session.user.id);
       } else {
+        setUser(null);
         setProfile(null);
         setLoading(false);
       }
