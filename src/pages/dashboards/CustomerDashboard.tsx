@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/Layout';
 import { 
   ShoppingBag, 
@@ -10,11 +10,45 @@ import {
   ClipboardList,
   Search,
   ArrowRight,
-  PlayCircle
+  PlayCircle,
+  Package
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 export default function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (activeTab === 'home') {
+      fetchProducts();
+    }
+  }, [activeTab]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const renderContent = () => {
     switch (activeTab) {
@@ -97,50 +131,78 @@ export default function CustomerDashboard() {
         return (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900">Home</h1>
-            <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-6">
+            <div className="bg-white p-8 sm:p-12 rounded-3xl border border-stone-200 text-center space-y-6">
               <div className="max-w-md mx-auto relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" />
                 <input 
                   type="text" 
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
                   placeholder="O que você quer aprender hoje?" 
                   className="w-full pl-12 pr-4 py-4 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
                 />
               </div>
+              
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {['Design', 'Marketing', 'Programação', 'Negócios'].map((cat, i) => (
-                  <div key={i} className="p-4 bg-stone-50 rounded-2xl border border-stone-100 hover:border-indigo-200 transition-all cursor-pointer">
-                    <div className="font-bold text-stone-900 text-sm">{cat}</div>
-                  </div>
+                  <button 
+                    key={i} 
+                    onClick={() => setSearchTerm(cat)}
+                    className="p-4 bg-stone-50 rounded-2xl border border-stone-100 hover:border-indigo-200 transition-all cursor-pointer font-bold text-stone-900 text-sm"
+                  >
+                    {cat}
+                  </button>
                 ))}
               </div>
+
               <div className="pt-8">
-                <h2 className="text-xl font-bold text-stone-900 mb-6">Recomendados para Você</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3].map((_, i) => (
-                    <div key={i} className="bg-white border border-stone-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all text-left group">
-                      <div className="h-40 bg-stone-200 relative">
-                        <img src={`https://picsum.photos/seed/shop${i}/400/300`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-indigo-600">
-                          R$ 97,00
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-bold text-stone-900 mb-2 group-hover:text-indigo-600 transition-colors">Curso de Estratégia Digital</h3>
-                        <div className="flex items-center gap-1 text-amber-400 mb-4">
-                          <Star className="h-3 w-3 fill-current" />
-                          <Star className="h-3 w-3 fill-current" />
-                          <Star className="h-3 w-3 fill-current" />
-                          <Star className="h-3 w-3 fill-current" />
-                          <Star className="h-3 w-3 fill-current" />
-                          <span className="text-[10px] text-stone-400 font-bold ml-1">(4.9)</span>
-                        </div>
-                        <button className="w-full py-2.5 bg-stone-900 text-white rounded-xl font-bold text-xs hover:bg-stone-800 transition-all">
-                          Ver Detalhes
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-stone-900">Produtos em Destaque</h2>
+                  {loading && <div className="h-5 w-5 border-2 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />}
                 </div>
+
+                {filteredProducts.length === 0 ? (
+                  <div className="py-12 text-center space-y-4">
+                    <Package className="h-12 w-12 text-stone-100 mx-auto" />
+                    <p className="text-stone-500">Nenhum produto encontrado.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProducts.map((product) => (
+                      <div key={product.id} className="bg-white border border-stone-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all text-left group">
+                        <div className="h-48 bg-stone-200 relative">
+                          {product.images?.[0] ? (
+                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-stone-400">
+                              <Package className="h-12 w-12" />
+                            </div>
+                          )}
+                          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-black text-indigo-600 shadow-sm">
+                            R$ {product.price.toLocaleString()}
+                          </div>
+                          <div className="absolute bottom-3 left-3">
+                            <span className="px-2 py-1 bg-stone-900/60 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                              {product.category}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-5">
+                          <h3 className="font-bold text-stone-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">{product.name}</h3>
+                          <p className="text-xs text-stone-500 line-clamp-2 mb-4 h-8">{product.description}</p>
+                          <div className="flex items-center gap-1 text-amber-400 mb-4">
+                            {[1, 2, 3, 4, 5].map(s => <Star key={s} className="h-3 w-3 fill-current" />)}
+                            <span className="text-[10px] text-stone-400 font-bold ml-1">(5.0)</span>
+                          </div>
+                          <button className="w-full py-3 bg-stone-900 text-white rounded-2xl font-bold text-xs hover:bg-stone-800 transition-all flex items-center justify-center gap-2">
+                            Ver Detalhes
+                            <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

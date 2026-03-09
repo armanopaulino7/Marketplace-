@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/Layout';
 import { 
   Shield, 
@@ -12,11 +12,80 @@ import {
   Home as HomeIcon,
   User as UserIcon,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Package,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [pendingProducts, setPendingProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    users: 0,
+    sales: 0,
+    pendingWithdrawals: 0,
+    pendingProducts: 0
+  });
+
+  useEffect(() => {
+    fetchPendingProducts();
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      const { count: pendingProdCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      const { count: pendingWithCount } = await supabase.from('withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      
+      setStats({
+        users: usersCount || 0,
+        sales: 45200, // Mock for now
+        pendingWithdrawals: pendingWithCount || 0,
+        pendingProducts: pendingProdCount || 0
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  const fetchPendingProducts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, profiles(email)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingProducts(data || []);
+    } catch (err) {
+      console.error('Error fetching pending products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProductAction = async (productId: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ status })
+        .eq('id', productId);
+
+      if (error) throw error;
+      
+      setPendingProducts(prev => prev.filter(p => p.id !== productId));
+      fetchStats();
+    } catch (err) {
+      console.error(`Error ${status} product:`, err);
+      alert('Erro ao processar ação no produto.');
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -30,10 +99,10 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Usuários Totais', value: '1,284', icon: Users, color: 'bg-blue-50 text-blue-600', trend: '+12%', trendUp: true },
-                { label: 'Vendas Mensais', value: 'R$ 45.200', icon: BarChart3, color: 'bg-emerald-50 text-emerald-600', trend: '+8%', trendUp: true },
-                { label: 'Saques Pendentes', value: 'R$ 12.850', icon: Wallet, color: 'bg-orange-50 text-orange-600', trend: '-2%', trendUp: false },
-                { label: 'Produtos Pendentes', value: '24', icon: CheckSquare, color: 'bg-purple-50 text-purple-600', trend: '+5', trendUp: true },
+                { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600', trend: '+12%', trendUp: true },
+                { label: 'Vendas Mensais', value: `R$ ${stats.sales.toLocaleString()}`, icon: BarChart3, color: 'bg-emerald-50 text-emerald-600', trend: '+8%', trendUp: true },
+                { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600', trend: '-2%', trendUp: false },
+                { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600', trend: '+5', trendUp: true },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
@@ -91,28 +160,65 @@ export default function AdminDashboard() {
       case 'aprovacao-produtos':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Aprovação de Produtos</h1>
-            <div className="grid grid-cols-1 gap-4">
-              {[1, 2, 3].map((_, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 flex flex-col sm:flex-row items-center gap-6">
-                  <div className="h-24 w-24 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400">
-                    <CheckSquare className="h-10 w-10" />
-                  </div>
-                  <div className="flex-1 text-center sm:text-left">
-                    <h3 className="font-bold text-stone-900 text-lg">Curso de Programação Avançada {i+1}</h3>
-                    <p className="text-sm text-stone-500">Produtor: joao@exemplo.com • R$ 497,00</p>
-                    <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-2">
-                      <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-lg">Educação</span>
-                      <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">Digital</span>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-stone-900">Aprovação de Produtos</h1>
+              <button 
+                onClick={fetchPendingProducts}
+                className="p-2 text-stone-400 hover:text-indigo-600 transition-colors"
+                title="Atualizar"
+              >
+                <Clock className={loading ? "animate-spin" : ""} />
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+              </div>
+            ) : pendingProducts.length === 0 ? (
+              <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4">
+                <Package className="h-16 w-16 text-stone-100 mx-auto" />
+                <h2 className="text-xl font-bold text-stone-900">Tudo em dia!</h2>
+                <p className="text-stone-500">Não há produtos pendentes de aprovação no momento.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {pendingProducts.map((product) => (
+                  <div key={product.id} className="bg-white p-6 rounded-3xl border border-stone-200 flex flex-col sm:flex-row items-center gap-6">
+                    <div className="h-24 w-24 bg-stone-100 rounded-2xl flex items-center justify-center overflow-hidden">
+                      {product.images?.[0] ? (
+                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <Package className="h-10 w-10 text-stone-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="font-bold text-stone-900 text-lg">{product.name}</h3>
+                      <p className="text-sm text-stone-500">Produtor: {product.profiles?.email} • R$ {product.price.toLocaleString()}</p>
+                      <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-2">
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-lg">{product.category}</span>
+                        <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">{product.subcategory}</span>
+                        <span className="px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase rounded-lg">Comissão: {product.commission_rate}%</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <button 
+                        onClick={() => handleProductAction(product.id, 'approved')}
+                        className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all"
+                      >
+                        Aprovar
+                      </button>
+                      <button 
+                        onClick={() => handleProductAction(product.id, 'rejected')}
+                        className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 transition-all"
+                      >
+                        Recusar
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <button className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all">Aprovar</button>
-                    <button className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 transition-all">Recusar</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       case 'gestao-usuarios':
