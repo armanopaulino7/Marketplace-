@@ -11,11 +11,13 @@ import {
   Search,
   ArrowRight,
   PlayCircle,
-  Package
+  Package,
+  Camera
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import ImageUpload from '../../components/ImageUpload';
 
 export default function CustomerDashboard() {
   const { user } = useAuth();
@@ -313,8 +315,29 @@ export default function CustomerDashboard() {
             <h1 className="text-3xl font-bold text-stone-900">Seu Perfil</h1>
             <div className="bg-white p-8 rounded-3xl border border-stone-200 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
-                <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center text-3xl font-bold text-indigo-600">
-                  C
+                <div className="relative group">
+                  <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center text-3xl font-bold text-indigo-600 overflow-hidden border-4 border-white shadow-sm">
+                    {user?.user_metadata?.avatar_url ? (
+                      <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      user?.email?.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ImageUpload 
+                      onUpload={async (url) => {
+                        const { error } = await supabase.auth.updateUser({
+                          data: { avatar_url: url }
+                        });
+                        if (error) alert('Erro ao atualizar foto de perfil');
+                        else window.location.reload();
+                      }}
+                      folder="avatars"
+                    />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full shadow-md border border-stone-100 text-stone-400">
+                    <Camera className="h-4 w-4" />
+                  </div>
                 </div>
                 <div className="text-center sm:text-left">
                   <h2 className="text-xl font-bold text-stone-900">{user?.email?.split('@')[0]}</h2>

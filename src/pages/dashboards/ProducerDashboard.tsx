@@ -15,11 +15,13 @@ import {
   Image as ImageIcon,
   X,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Camera
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import WalletCard from '../../components/WalletCard';
+import ImageUpload from '../../components/ImageUpload';
 
 export default function ProducerDashboard() {
   const { user } = useAuth();
@@ -47,7 +49,6 @@ export default function ProducerDashboard() {
   });
 
   const [newVariation, setNewVariation] = useState({ type: 'tamanho', value: '' });
-  const [imageUrl, setImageUrl] = useState('');
   const [stats, setStats] = useState({
     activeProducts: 0,
     totalRevenue: 0,
@@ -159,13 +160,12 @@ export default function ProducerDashboard() {
     }));
   };
 
-  const handleAddImage = () => {
-    if (!imageUrl || formData.images.length >= 5) return;
+  const handleAddImage = (url: string) => {
+    if (formData.images.length >= 5) return;
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, imageUrl]
+      images: [...prev.images, url]
     }));
-    setImageUrl('');
   };
 
   const removeImage = (index: number) => {
@@ -524,23 +524,10 @@ export default function ProducerDashboard() {
                 <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
                   <h2 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-4">Imagens (1 a 5) *</h2>
                   
-                  <div className="flex gap-2">
-                    <input 
-                      type="url"
-                      value={imageUrl}
-                      onChange={e => setImageUrl(e.target.value)}
-                      placeholder="URL da Imagem"
-                      className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                    />
-                    <button 
-                      type="button"
-                      onClick={handleAddImage}
-                      disabled={formData.images.length >= 5}
-                      className="p-3 bg-stone-100 text-stone-600 rounded-2xl hover:bg-stone-200 transition-all disabled:opacity-50"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
-                  </div>
+                  <ImageUpload 
+                    onUpload={handleAddImage} 
+                    folder="products"
+                  />
 
                   <div className="grid grid-cols-2 gap-2">
                     {formData.images.map((url, idx) => (
@@ -635,8 +622,29 @@ export default function ProducerDashboard() {
             <h1 className="text-3xl font-bold text-stone-900">Perfil do Produtor</h1>
             <div className="bg-white p-8 rounded-3xl border border-stone-200 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
-                <div className="h-24 w-24 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-600">
-                  P
+                <div className="relative group">
+                  <div className="h-24 w-24 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-600 overflow-hidden border-4 border-white shadow-sm">
+                    {user?.user_metadata?.avatar_url ? (
+                      <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      user?.email?.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ImageUpload 
+                      onUpload={async (url) => {
+                        const { error } = await supabase.auth.updateUser({
+                          data: { avatar_url: url }
+                        });
+                        if (error) alert('Erro ao atualizar foto de perfil');
+                        else window.location.reload();
+                      }}
+                      folder="avatars"
+                    />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full shadow-md border border-stone-100 text-stone-400">
+                    <Camera className="h-4 w-4" />
+                  </div>
                 </div>
                 <div className="text-center sm:text-left">
                   <h2 className="text-xl font-bold text-stone-900">{user?.email?.split('@')[0]}</h2>
