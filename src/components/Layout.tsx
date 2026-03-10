@@ -148,8 +148,12 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           <div className="p-4 border-t border-stone-100">
             <div className="bg-stone-50 rounded-2xl p-4 mb-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                  {profile?.email?.[0].toUpperCase()}
+                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold overflow-hidden border-2 border-white shadow-sm">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    profile?.email?.[0].toUpperCase()
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-stone-900 truncate">{profile?.email}</p>

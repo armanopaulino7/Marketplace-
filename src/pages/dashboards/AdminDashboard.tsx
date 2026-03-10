@@ -24,7 +24,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [pendingProducts, setPendingProducts] = useState<any[]>([]);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
@@ -65,21 +65,32 @@ export default function AdminDashboard() {
   const handleAddDeliveryFee = async () => {
     if (!newFee.neighborhood || !newFee.fee) return;
     
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('delivery_fees')
         .insert([{ 
-          neighborhood: newFee.neighborhood, 
+          neighborhood: newFee.neighborhood.trim(), 
           fee: parseFloat(newFee.fee) 
         }]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          alert('Este bairro já possui uma taxa cadastrada. Edite a taxa existente ou use outro nome.');
+        } else {
+          throw error;
+        }
+        return;
+      }
       
       setNewFee({ neighborhood: '', fee: '' });
-      fetchDeliveryFees();
-    } catch (err) {
+      await fetchDeliveryFees();
+      alert('Taxa adicionada com sucesso!');
+    } catch (err: any) {
       console.error('Error adding delivery fee:', err);
-      alert('Erro ao adicionar taxa de entrega. Verifique se o bairro já existe.');
+      alert('Erro ao adicionar taxa: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -561,9 +572,18 @@ export default function AdminDashboard() {
       case 'taxas-entrega':
         return (
           <div className="space-y-6">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-stone-900">Taxas de Entrega</h1>
-              <p className="text-stone-500">Gerencie os valores de entrega por bairro.</p>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-3xl font-bold text-stone-900">Taxas de Entrega</h1>
+                <p className="text-stone-500">Gerencie os valores de entrega por bairro.</p>
+              </div>
+              <button 
+                onClick={fetchDeliveryFees}
+                className="p-3 bg-stone-100 text-stone-600 rounded-2xl hover:bg-stone-200 transition-all"
+                title="Atualizar Lista"
+              >
+                <Clock className={loading ? "animate-spin" : ""} />
+              </button>
             </div>
 
             <div className="bg-white p-8 rounded-3xl border border-stone-200">
@@ -678,20 +698,35 @@ export default function AdminDashboard() {
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
                   <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center text-3xl font-bold text-indigo-600 overflow-hidden border-4 border-white shadow-sm">
-                    {user?.user_metadata?.avatar_url ? (
-                      <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      user?.email?.charAt(0).toUpperCase()
+                      profile?.email?.charAt(0).toUpperCase()
                     )}
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <ImageUpload 
                       onUpload={async (url) => {
-                        const { error } = await supabase.auth.updateUser({
-                          data: { avatar_url: url }
-                        });
-                        if (error) alert('Erro ao atualizar foto de perfil');
-                        else window.location.reload();
+                        try {
+                          // 1. Update Auth Metadata
+                          const { error: authError } = await supabase.auth.updateUser({
+                            data: { avatar_url: url }
+                          });
+                          if (authError) throw authError;
+
+                          // 2. Update Profiles Table
+                          const { error: profileError } = await supabase
+                            .from('profiles')
+                            .update({ avatar_url: url })
+                            .eq('id', user.id);
+                          if (profileError) throw profileError;
+
+                          alert('Foto de perfil atualizada!');
+                          window.location.reload();
+                        } catch (err: any) {
+                          console.error('Error updating profile photo:', err);
+                          alert('Erro ao atualizar foto: ' + (err.message || 'Erro desconhecido'));
+                        }
                       }}
                       folder="avatars"
                     />

@@ -128,7 +128,7 @@ export default function Checkout() {
       const { data: adminUser } = await supabase
         .from('profiles')
         .select('id')
-        .eq('role', 'admin')
+        .eq('role', 'adm')
         .limit(1)
         .single();
 

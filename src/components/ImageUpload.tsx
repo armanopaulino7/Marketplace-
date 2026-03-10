@@ -38,10 +38,11 @@ export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'pr
         .from('images')
         .getPublicUrl(filePath);
 
+      console.log('Image uploaded successfully. Public URL:', publicUrl);
       onUpload(publicUrl);
     } catch (error: any) {
-      console.error('Error uploading image:', error.message);
-      alert('Erro ao carregar imagem. Tente novamente.');
+      console.error('Error uploading image:', error);
+      alert('Erro ao carregar imagem: ' + (error.message || 'Erro desconhecido'));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

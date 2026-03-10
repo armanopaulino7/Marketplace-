@@ -26,7 +26,7 @@ import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function AffiliateDashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [copied, setCopied] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -401,20 +401,35 @@ export default function AffiliateDashboard() {
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
                   <div className="h-24 w-24 rounded-full bg-orange-100 flex items-center justify-center text-3xl font-bold text-orange-600 overflow-hidden border-4 border-white shadow-sm">
-                    {user?.user_metadata?.avatar_url ? (
-                      <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      user?.email?.charAt(0).toUpperCase()
+                      profile?.email?.charAt(0).toUpperCase()
                     )}
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <ImageUpload 
                       onUpload={async (url) => {
-                        const { error } = await supabase.auth.updateUser({
-                          data: { avatar_url: url }
-                        });
-                        if (error) alert('Erro ao atualizar foto de perfil');
-                        else window.location.reload();
+                        try {
+                          // 1. Update Auth Metadata
+                          const { error: authError } = await supabase.auth.updateUser({
+                            data: { avatar_url: url }
+                          });
+                          if (authError) throw authError;
+
+                          // 2. Update Profiles Table
+                          const { error: profileError } = await supabase
+                            .from('profiles')
+                            .update({ avatar_url: url })
+                            .eq('id', user.id);
+                          if (profileError) throw profileError;
+
+                          alert('Foto de perfil atualizada!');
+                          window.location.reload();
+                        } catch (err: any) {
+                          console.error('Error updating profile photo:', err);
+                          alert('Erro ao atualizar foto: ' + (err.message || 'Erro desconhecido'));
+                        }
                       }}
                       folder="avatars"
                     />
