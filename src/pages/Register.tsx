@@ -7,6 +7,8 @@ import { UserRole } from '../types';
 export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phone2, setPhone2] = useState('');
   const [role, setRole] = useState<UserRole>('cliente');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,10 @@ export default function Register() {
     setError(null);
 
     try {
+      if (role === 'produtor' && !phone) {
+        throw new Error('O número de telefone é obrigatório para produtores.');
+      }
+
       // 1. Sign up user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -57,6 +63,8 @@ export default function Register() {
             id: authData.user.id,
             email,
             role,
+            phone: phone || null,
+            phone2: phone2 || null,
           },
         ]);
 
@@ -73,40 +81,40 @@ export default function Register() {
 
   if (checkingAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950">
         <Loader2 className="h-10 w-10 text-indigo-600 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200">
+          <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none">
             <UserPlus className="h-10 w-10 text-white" />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-stone-900 tracking-tight">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight">
           Crie sua conta
         </h2>
-        <p className="mt-2 text-center text-sm text-stone-500">
+        <p className="mt-2 text-center text-sm text-stone-500 dark:text-stone-400">
           Escolha seu perfil e comece agora mesmo
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl shadow-stone-200 sm:rounded-3xl sm:px-10 border border-stone-100">
+        <div className="bg-white dark:bg-stone-900 py-8 px-4 shadow-xl shadow-stone-200 dark:shadow-none sm:rounded-3xl sm:px-10 border border-stone-100 dark:border-stone-800">
           <form className="space-y-6" onSubmit={handleRegister}>
             {error && (
-              <div className="bg-rose-50 border border-rose-100 text-rose-600 p-4 rounded-2xl flex items-start gap-3 text-sm">
+              <div className="bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-800 text-rose-600 dark:text-rose-400 p-4 rounded-2xl flex items-start gap-3 text-sm">
                 <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-stone-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
                 E-mail
               </label>
               <div className="relative">
@@ -121,14 +129,14 @@ export default function Register() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-stone-200 rounded-2xl text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-3 border border-stone-200 dark:border-stone-700 rounded-2xl text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm"
                   placeholder="seu@email.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-stone-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
                 Senha
               </label>
               <div className="relative">
@@ -143,14 +151,45 @@ export default function Register() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-stone-200 rounded-2xl text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-3 border border-stone-200 dark:border-stone-700 rounded-2xl text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm"
                   placeholder="••••••••"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-stone-700 mb-3">
+              <label htmlFor="phone" className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                Telefone {role === 'produtor' && '*'}
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required={role === 'produtor'}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="block w-full px-4 py-3 border border-stone-200 dark:border-stone-700 rounded-2xl text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm"
+                placeholder="9XXXXXXXX"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phone2" className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                Telefone Secundário (Opcional)
+              </label>
+              <input
+                id="phone2"
+                name="phone2"
+                type="tel"
+                value={phone2}
+                onChange={(e) => setPhone2(e.target.value)}
+                className="block w-full px-4 py-3 border border-stone-200 dark:border-stone-700 rounded-2xl text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm"
+                placeholder="9XXXXXXXX"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
                 Tipo de Conta
               </label>
               <div className="grid grid-cols-1 gap-3">
@@ -160,14 +199,14 @@ export default function Register() {
                     onClick={() => setRole('adm')}
                     className={`flex items-center gap-3 p-4 border rounded-2xl transition-all ${
                       role === 'adm'
-                        ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                        : 'border-stone-200 hover:border-stone-300'
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 ring-1 ring-indigo-600'
+                        : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
                     }`}
                   >
                     <ShieldCheck className={`h-6 w-6 ${role === 'adm' ? 'text-indigo-600' : 'text-stone-400'}`} />
                     <div className="text-left">
-                      <div className={`font-bold text-sm ${role === 'adm' ? 'text-indigo-900' : 'text-stone-900'}`}>Administrador</div>
-                      <div className="text-xs text-stone-500">Acesso total ao sistema</div>
+                      <div className={`font-bold text-sm ${role === 'adm' ? 'text-indigo-900 dark:text-indigo-400' : 'text-stone-900 dark:text-white'}`}>Administrador</div>
+                      <div className="text-xs text-stone-500 dark:text-stone-400">Acesso total ao sistema</div>
                     </div>
                   </button>
                 )}
@@ -177,14 +216,14 @@ export default function Register() {
                   onClick={() => setRole('produtor')}
                   className={`flex items-center gap-3 p-4 border rounded-2xl transition-all ${
                     role === 'produtor'
-                      ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                      : 'border-stone-200 hover:border-stone-300'
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 ring-1 ring-indigo-600'
+                      : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
                   }`}
                 >
                   <ShoppingBag className={`h-6 w-6 ${role === 'produtor' ? 'text-indigo-600' : 'text-stone-400'}`} />
                   <div className="text-left">
-                    <div className={`font-bold text-sm ${role === 'produtor' ? 'text-indigo-900' : 'text-stone-900'}`}>Produtor</div>
-                    <div className="text-xs text-stone-500">Crie e venda seus produtos</div>
+                    <div className={`font-bold text-sm ${role === 'produtor' ? 'text-indigo-900 dark:text-indigo-400' : 'text-stone-900 dark:text-white'}`}>Produtor</div>
+                    <div className="text-xs text-stone-500 dark:text-stone-400">Crie e venda seus produtos</div>
                   </div>
                 </button>
 
@@ -193,14 +232,14 @@ export default function Register() {
                   onClick={() => setRole('afiliado')}
                   className={`flex items-center gap-3 p-4 border rounded-2xl transition-all ${
                     role === 'afiliado'
-                      ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                      : 'border-stone-200 hover:border-stone-300'
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 ring-1 ring-indigo-600'
+                      : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
                   }`}
                 >
                   <UserPlus className={`h-6 w-6 ${role === 'afiliado' ? 'text-indigo-600' : 'text-stone-400'}`} />
                   <div className="text-left">
-                    <div className={`font-bold text-sm ${role === 'afiliado' ? 'text-indigo-900' : 'text-stone-900'}`}>Afiliado</div>
-                    <div className="text-xs text-stone-500">Promova produtos e ganhe comissão</div>
+                    <div className={`font-bold text-sm ${role === 'afiliado' ? 'text-indigo-900 dark:text-indigo-400' : 'text-stone-900 dark:text-white'}`}>Afiliado</div>
+                    <div className="text-xs text-stone-500 dark:text-stone-400">Promova produtos e ganhe comissão</div>
                   </div>
                 </button>
 
@@ -209,14 +248,14 @@ export default function Register() {
                   onClick={() => setRole('cliente')}
                   className={`flex items-center gap-3 p-4 border rounded-2xl transition-all ${
                     role === 'cliente'
-                      ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                      : 'border-stone-200 hover:border-stone-300'
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 ring-1 ring-indigo-600'
+                      : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
                   }`}
                 >
                   <User className={`h-6 w-6 ${role === 'cliente' ? 'text-indigo-600' : 'text-stone-400'}`} />
                   <div className="text-left">
-                    <div className={`font-bold text-sm ${role === 'cliente' ? 'text-indigo-900' : 'text-stone-900'}`}>Cliente</div>
-                    <div className="text-xs text-stone-500">Compre e acesse seus conteúdos</div>
+                    <div className={`font-bold text-sm ${role === 'cliente' ? 'text-indigo-900 dark:text-indigo-400' : 'text-stone-900 dark:text-white'}`}>Cliente</div>
+                    <div className="text-xs text-stone-500 dark:text-stone-400">Compre e acesse seus conteúdos</div>
                   </div>
                 </button>
               </div>
@@ -238,9 +277,9 @@ export default function Register() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-stone-500 dark:text-stone-400">
               Já tem uma conta?{' '}
-              <Link to="/login" className="font-bold text-indigo-600 hover:text-indigo-500">
+              <Link to="/login" className="font-bold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
                 Fazer login
               </Link>
             </p>

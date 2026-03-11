@@ -40,6 +40,8 @@ export default function ProducerDashboard() {
     subcategory: '',
     commission_rate: '10',
     pickup_address: '',
+    phone1: '',
+    phone2: '',
     images: [] as string[],
     variations: {
       tamanho: [] as string[],
@@ -184,10 +186,20 @@ export default function ProducerDashboard() {
       return;
     }
 
+    if (!formData.phone1) {
+      setError('Pelo menos um número de telefone é obrigatório.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
+      console.log('Submitting product with data:', {
+        ...formData,
+        producer_id: user.id
+      });
+
       const { error: insertError } = await supabase
         .from('products')
         .insert({
@@ -200,6 +212,8 @@ export default function ProducerDashboard() {
           subcategory: formData.subcategory,
           commission_rate: parseFloat(formData.commission_rate),
           pickup_address: formData.pickup_address,
+          phone1: formData.phone1,
+          phone2: formData.phone2,
           images: formData.images,
           variations: formData.variations,
           status: 'pending'
@@ -217,6 +231,8 @@ export default function ProducerDashboard() {
         subcategory: '',
         commission_rate: '10',
         pickup_address: '',
+        phone1: '',
+        phone2: '',
         images: [],
         variations: { tamanho: [], peso: [], cor: [] }
       });
@@ -240,12 +256,12 @@ export default function ProducerDashboard() {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold text-stone-900">Dashboard Produtor</h1>
-                <p className="text-stone-500">Gerencie seus produtos e acompanhe suas vendas.</p>
+                <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Dashboard Produtor</h1>
+                <p className="text-stone-500 dark:text-stone-400">Gerencie seus produtos e acompanhe suas vendas.</p>
               </div>
               <button 
                 onClick={() => setActiveTab('cadastrar-produto')}
-                className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+                className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none"
               >
                 <Plus className="h-5 w-5" />
                 Novo Produto
@@ -256,25 +272,25 @@ export default function ProducerDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Produtos Ativos', value: stats.activeProducts.toString(), icon: Package, color: 'bg-blue-50 text-blue-600' },
-                { label: 'Receita Total', value: `${stats.totalRevenue.toLocaleString()} Kz`, icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
-                { label: 'Afiliados', value: stats.affiliates.toString(), icon: Users, color: 'bg-purple-50 text-purple-600' },
+                { label: 'Produtos Ativos', value: stats.activeProducts.toString(), icon: Package, color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
+                { label: 'Receita Total', value: `${stats.totalRevenue.toLocaleString()} Kz`, icon: TrendingUp, color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' },
+                { label: 'Afiliados', value: stats.affiliates.toString(), icon: Users, color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' },
               ].map((stat, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm">
+                <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <div className={`p-3 rounded-2xl ${stat.color}`}>
                       <stat.icon className="h-6 w-6" />
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-stone-900">{stat.value}</div>
-                  <div className="text-sm text-stone-500">{stat.label}</div>
+                  <div className="text-2xl font-bold text-stone-900 dark:text-white">{stat.value}</div>
+                  <div className="text-sm text-stone-500 dark:text-stone-400">{stat.label}</div>
                 </div>
               ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-stone-900 mb-4">Seus Produtos</h2>
+              <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm p-6">
+                <h2 className="text-lg font-bold text-stone-900 dark:text-white mb-4">Seus Produtos</h2>
                 <div className="space-y-4">
                   {topProducts.length === 0 ? (
                     <div className="py-12 text-center text-stone-400">
@@ -282,8 +298,8 @@ export default function ProducerDashboard() {
                     </div>
                   ) : (
                     topProducts.map((product) => (
-                      <div key={product.id} className="flex items-center gap-4 p-4 border border-stone-100 rounded-2xl hover:border-indigo-100 transition-all">
-                        <div className="h-16 w-16 bg-stone-100 rounded-xl flex items-center justify-center overflow-hidden">
+                      <div key={product.id} className="flex items-center gap-4 p-4 border border-stone-100 dark:border-stone-800 rounded-2xl hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all">
+                        <div className="h-16 w-16 bg-stone-100 dark:bg-stone-800 rounded-xl flex items-center justify-center overflow-hidden">
                           {product.images?.[0] ? (
                             <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
@@ -291,11 +307,11 @@ export default function ProducerDashboard() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="font-bold text-stone-900 line-clamp-1">{product.name}</div>
-                          <div className="text-sm text-stone-500">{product.price.toLocaleString()} Kz</div>
+                          <div className="font-bold text-stone-900 dark:text-white line-clamp-1">{product.name}</div>
+                          <div className="text-sm text-stone-500 dark:text-stone-400">{product.price.toLocaleString()} Kz</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-emerald-600">{product.quantity} em estoque</div>
+                          <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{product.quantity} em estoque</div>
                           <div className="text-xs text-stone-400 uppercase tracking-widest">{product.status}</div>
                         </div>
                       </div>
@@ -304,13 +320,13 @@ export default function ProducerDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-stone-900 mb-4">Solicitações de Afiliação</h2>
+              <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm p-6">
+                <h2 className="text-lg font-bold text-stone-900 dark:text-white mb-4">Solicitações de Afiliação</h2>
                 <div className="space-y-4 text-center py-12">
-                  <div className="bg-stone-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-8 w-8 text-stone-300" />
+                  <div className="bg-stone-50 dark:bg-stone-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-stone-300 dark:text-stone-600" />
                   </div>
-                  <p className="text-stone-500 text-sm">Nenhuma solicitação pendente no momento.</p>
+                  <p className="text-stone-500 dark:text-stone-400 text-sm">Nenhuma solicitação pendente no momento.</p>
                 </div>
               </div>
             </div>
@@ -319,11 +335,11 @@ export default function ProducerDashboard() {
       case 'home':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Home</h1>
-            <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4">
-              <HomeIcon className="h-16 w-16 text-stone-200 mx-auto" />
-              <h2 className="text-xl font-bold text-stone-900">Vitrine do Produtor</h2>
-              <p className="text-stone-500 max-w-md mx-auto">Visualize como seus produtos aparecem para os clientes no marketplace.</p>
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Home</h1>
+            <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+              <HomeIcon className="h-16 w-16 text-stone-200 dark:text-stone-800 mx-auto" />
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white">Vitrine do Produtor</h2>
+              <p className="text-stone-500 dark:text-stone-400 max-w-md mx-auto">Visualize como seus produtos aparecem para os clientes no marketplace.</p>
               <button className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all">Ver Minha Loja</button>
             </div>
           </div>
@@ -332,19 +348,19 @@ export default function ProducerDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-stone-900">Cadastrar Novo Produto</h1>
-              <p className="text-stone-500">Preencha os detalhes abaixo para enviar seu produto para análise.</p>
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Cadastrar Novo Produto</h1>
+              <p className="text-stone-500 dark:text-stone-400">Preencha os detalhes abaixo para enviar seu produto para análise.</p>
             </div>
 
             {success && (
-              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3 text-emerald-700 animate-in fade-in slide-in-from-top-4">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-2xl flex items-center gap-3 text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-top-4">
                 <CheckCircle2 className="h-5 w-5" />
                 <p className="font-bold">Produto enviado com sucesso! Aguarde a aprovação do ADM.</p>
               </div>
             )}
 
             {error && (
-              <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-700">
+              <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 p-4 rounded-2xl flex items-center gap-3 text-rose-700 dark:text-rose-400">
                 <AlertCircle className="h-5 w-5" />
                 <p className="font-bold">{error}</p>
               </div>
@@ -353,83 +369,107 @@ export default function ProducerDashboard() {
             <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Main Info */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
-                  <h2 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-4">Informações Gerais</h2>
+                <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">Informações Gerais</h2>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-bold text-stone-700 mb-1">Nome do Produto *</label>
+                      <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Nome do Produto *</label>
                       <input 
                         required
                         type="text" 
                         value={formData.name}
                         onChange={e => setFormData({...formData, name: e.target.value})}
                         placeholder="Ex: Camiseta Premium Algodão" 
-                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-bold text-stone-700 mb-1">Descrição Detalhada *</label>
+                      <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Descrição Detalhada *</label>
                       <textarea 
                         required
                         rows={5} 
                         value={formData.description}
                         onChange={e => setFormData({...formData, description: e.target.value})}
                         placeholder="Descreva as características, benefícios e diferenciais do seu produto..." 
-                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all"
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all"
                       ></textarea>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-bold text-stone-700 mb-1">Categoria *</label>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Categoria *</label>
                         <input 
                           required
                           type="text"
                           value={formData.category}
                           onChange={e => setFormData({...formData, category: e.target.value})}
                           placeholder="Ex: Moda"
-                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-stone-700 mb-1">Subcategoria *</label>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Subcategoria *</label>
                         <input 
                           required
                           type="text"
                           value={formData.subcategory}
                           onChange={e => setFormData({...formData, subcategory: e.target.value})}
                           placeholder="Ex: Camisetas"
-                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-stone-700 mb-1">Endereço de Recolha (Pickup) *</label>
+                      <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Endereço de Recolha (Pickup) *</label>
                       <input 
                         required
                         type="text" 
                         value={formData.pickup_address}
                         onChange={e => setFormData({...formData, pickup_address: e.target.value})}
                         placeholder="Ex: Rua Direita da Samba, Luanda (Seu endereço completo)" 
-                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                       />
-                      <p className="text-[10px] text-stone-400 mt-1 italic">Este endereço será usado pelo ADM para recolher o produto para entrega.</p>
+                      <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1 italic">Este endereço será usado pelo ADM para recolher o produto para entrega.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Telefone Principal *</label>
+                        <input 
+                          required
+                          type="tel" 
+                          value={formData.phone1}
+                          onChange={e => setFormData({...formData, phone1: e.target.value})}
+                          placeholder="Ex: 923 000 000" 
+                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Telefone Secundário (Opcional)</label>
+                        <input 
+                          type="tel" 
+                          value={formData.phone2}
+                          onChange={e => setFormData({...formData, phone2: e.target.value})}
+                          placeholder="Ex: 912 000 000" 
+                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Variations */}
-                <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
-                  <h2 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-4">Variações (Opcional)</h2>
+                <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">Variações (Opcional)</h2>
                   
                   <div className="flex flex-col sm:flex-row gap-3">
                     <select 
                       value={newVariation.type}
                       onChange={e => setNewVariation({...newVariation, type: e.target.value})}
-                      className="px-4 py-3 rounded-2xl border border-stone-200 bg-stone-50 outline-none font-bold text-stone-700"
+                      className="px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 outline-none font-bold text-stone-700 dark:text-stone-300"
                     >
                       <option value="tamanho">Tamanho</option>
                       <option value="peso">Peso</option>
@@ -441,12 +481,12 @@ export default function ProducerDashboard() {
                         value={newVariation.value}
                         onChange={e => setNewVariation({...newVariation, value: e.target.value})}
                         placeholder="Ex: GG, 500g, Azul"
-                        className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                       <button 
                         type="button"
                         onClick={handleAddVariation}
-                        className="bg-stone-900 text-white px-6 rounded-2xl font-bold hover:bg-stone-800 transition-all"
+                        className="bg-stone-900 dark:bg-indigo-600 text-white px-6 rounded-2xl font-bold hover:bg-stone-800 dark:hover:bg-indigo-700 transition-all"
                       >
                         Adicionar
                       </button>
@@ -456,10 +496,10 @@ export default function ProducerDashboard() {
                   <div className="space-y-4">
                     {Object.entries(formData.variations).map(([type, values]) => (values as string[]).length > 0 && (
                       <div key={type} className="space-y-2">
-                        <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">{type}</p>
+                        <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">{type}</p>
                         <div className="flex flex-wrap gap-2">
                           {(values as string[]).map((val, idx) => (
-                            <span key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 text-stone-700 rounded-xl text-sm font-bold">
+                            <span key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl text-sm font-bold">
                               {val}
                               <button type="button" onClick={() => removeVariation(type, idx)} className="text-stone-400 hover:text-rose-500">
                                 <X className="h-3 w-3" />
@@ -475,12 +515,12 @@ export default function ProducerDashboard() {
 
               {/* Sidebar Info */}
               <div className="space-y-6">
-                <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
-                  <h2 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-4">Preço e Estoque</h2>
+                <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">Preço e Estoque</h2>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-bold text-stone-700 mb-1">Preço de Venda (Kz) *</label>
+                      <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Preço de Venda (Kz) *</label>
                       <input 
                         required
                         type="number" 
@@ -488,22 +528,22 @@ export default function ProducerDashboard() {
                         value={formData.price}
                         onChange={e => setFormData({...formData, price: e.target.value})}
                         placeholder="0,00" 
-                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-stone-700 mb-1">Quantidade em Estoque *</label>
+                      <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Quantidade em Estoque *</label>
                       <input 
                         required
                         type="number" 
                         value={formData.quantity}
                         onChange={e => setFormData({...formData, quantity: e.target.value})}
                         placeholder="0" 
-                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-stone-700 mb-1">Comissão Afiliado (%) *</label>
+                      <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Comissão Afiliado (%) *</label>
                       <div className="flex items-center gap-3">
                         <input 
                           required
@@ -512,17 +552,17 @@ export default function ProducerDashboard() {
                           max="50"
                           value={formData.commission_rate}
                           onChange={e => setFormData({...formData, commission_rate: e.target.value})}
-                          className="flex-1 h-2 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                          className="flex-1 h-2 bg-stone-100 dark:bg-stone-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         />
-                        <span className="font-bold text-indigo-600 min-w-[3rem] text-right">{formData.commission_rate}%</span>
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400 min-w-[3rem] text-right">{formData.commission_rate}%</span>
                       </div>
-                      <p className="text-[10px] text-stone-400 mt-1 italic">Máximo permitido: 50%</p>
+                      <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1 italic">Máximo permitido: 50%</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
-                  <h2 className="text-lg font-bold text-stone-900 border-b border-stone-100 pb-4">Imagens (1 a 5) *</h2>
+                <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">Imagens (1 a 5) *</h2>
                   
                   <ImageUpload 
                     onUpload={handleAddImage} 
@@ -531,7 +571,7 @@ export default function ProducerDashboard() {
 
                   <div className="grid grid-cols-2 gap-2">
                     {formData.images.map((url, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-stone-100 group">
+                      <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-stone-100 dark:border-stone-800 group">
                         <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         <button 
                           type="button"
@@ -543,7 +583,7 @@ export default function ProducerDashboard() {
                       </div>
                     ))}
                     {formData.images.length === 0 && (
-                      <div className="col-span-2 aspect-video rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center text-stone-400 gap-2">
+                      <div className="col-span-2 aspect-video rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-800 flex flex-col items-center justify-center text-stone-400 dark:text-stone-600 gap-2">
                         <ImageIcon className="h-8 w-8" />
                         <p className="text-xs font-medium">Nenhuma imagem adicionada</p>
                       </div>
@@ -554,7 +594,7 @@ export default function ProducerDashboard() {
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   {loading ? (
                     <div className="h-6 w-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
@@ -572,35 +612,35 @@ export default function ProducerDashboard() {
       case 'pedidos':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Pedidos</h1>
-            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
-              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-stone-900">Vendas Recentes</h2>
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Pedidos</h1>
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden">
+              <div className="p-6 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-stone-900 dark:text-white">Vendas Recentes</h2>
                 <div className="flex gap-2">
-                  <span className="px-3 py-1 bg-stone-100 text-stone-500 text-xs font-bold rounded-full">Todos</span>
-                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full">Pagos</span>
+                  <span className="px-3 py-1 bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 text-xs font-bold rounded-full">Todos</span>
+                  <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full">Pagos</span>
                 </div>
               </div>
-              <div className="divide-y divide-stone-100">
+              <div className="divide-y divide-stone-100 dark:divide-stone-800">
                 {recentSales.length === 0 ? (
-                  <div className="p-12 text-center text-stone-500">
+                  <div className="p-12 text-center text-stone-500 dark:text-stone-400">
                     Nenhuma venda registrada.
                   </div>
                 ) : (
                   recentSales.map((sale) => (
-                    <div key={sale.id} className="p-6 flex items-center justify-between hover:bg-stone-50 transition-colors">
+                    <div key={sale.id} className="p-6 flex items-center justify-between hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                        <div className="h-12 w-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                           <DollarSign className="h-6 w-6" />
                         </div>
                         <div>
-                          <div className="font-bold text-stone-900">Pedido #{sale.id.substring(0, 8).toUpperCase()}</div>
-                          <div className="text-sm text-stone-500">{sale.products?.name} • {new Date(sale.created_at).toLocaleDateString()}</div>
+                          <div className="font-bold text-stone-900 dark:text-white">Pedido #{sale.id.substring(0, 8).toUpperCase()}</div>
+                          <div className="text-sm text-stone-500 dark:text-stone-400">{sale.products?.name} • {new Date(sale.created_at).toLocaleDateString()}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-stone-900">{sale.amount.toLocaleString()} Kz</div>
-                        <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">{sale.status}</div>
+                        <div className="font-bold text-stone-900 dark:text-white">{sale.amount.toLocaleString()} Kz</div>
+                        <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">{sale.status}</div>
                       </div>
                     </div>
                   ))
@@ -612,18 +652,18 @@ export default function ProducerDashboard() {
       case 'carteira':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Sua Carteira</h1>
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Sua Carteira</h1>
             <WalletCard />
           </div>
         );
       case 'perfil':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Perfil do Produtor</h1>
-            <div className="bg-white p-8 rounded-3xl border border-stone-200 max-w-2xl">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Perfil do Produtor</h1>
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
-                  <div className="h-24 w-24 rounded-full bg-emerald-100 flex items-center justify-center text-3xl font-bold text-emerald-600 overflow-hidden border-4 border-white shadow-sm">
+                  <div className="h-24 w-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-3xl font-bold text-emerald-600 dark:text-emerald-400 overflow-hidden border-4 border-white dark:border-stone-800 shadow-sm">
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
@@ -657,28 +697,28 @@ export default function ProducerDashboard() {
                       folder="avatars"
                     />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full shadow-md border border-stone-100 text-stone-400">
+                  <div className="absolute -bottom-1 -right-1 bg-white dark:bg-stone-800 p-1.5 rounded-full shadow-md border border-stone-100 dark:border-stone-700 text-stone-400 dark:text-stone-500">
                     <Camera className="h-4 w-4" />
                   </div>
                 </div>
                 <div className="text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-stone-900">{user?.email?.split('@')[0]}</h2>
-                  <p className="text-stone-500">{user?.email}</p>
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">{user?.email?.split('@')[0]}</h2>
+                  <p className="text-stone-500 dark:text-stone-400">{user?.email}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full uppercase tracking-widest">Produtor</span>
+                    <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full uppercase tracking-widest">Produtor</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 border border-stone-200 rounded-2xl font-bold text-stone-700 hover:bg-stone-50 transition-all">
+                <button className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
                   <div className="flex items-center gap-3">
-                    <UserIcon className="h-5 w-5 text-stone-400" />
+                    <UserIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                     Dados Cadastrais
                   </div>
-                  <ArrowUpRight className="h-4 w-4 text-stone-300" />
+                  <ArrowUpRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
                 </button>
-                <button className="w-full flex items-center justify-between p-4 border border-stone-200 rounded-2xl font-bold text-stone-700 hover:bg-stone-50 transition-all">
-                  <Wallet className="h-5 w-5 text-stone-400" />
+                <button className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
+                  <Wallet className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                   Dados Bancários
                 </button>
               </div>

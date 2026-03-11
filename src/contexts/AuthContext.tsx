@@ -22,8 +22,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Session error:', error.message);
-        // If session is invalid, clear everything
-        supabase.auth.signOut();
+        // If session is invalid or refresh token not found, clear everything
+        if (error.message.includes('Refresh Token Not Found') || error.message.includes('invalid_refresh_token')) {
+          localStorage.removeItem('supabase.auth.token'); // Force clear local storage if needed
+          supabase.auth.signOut();
+        }
         setUser(null);
         setProfile(null);
         setLoading(false);
@@ -40,7 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+      } else if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
       } else {

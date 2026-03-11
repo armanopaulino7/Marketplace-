@@ -136,45 +136,45 @@ export default function WalletCard() {
 
   if (loading) {
     return (
-      <div className="bg-white p-8 rounded-[2.5rem] border border-stone-200 shadow-sm animate-pulse">
-        <div className="h-4 w-24 bg-stone-100 rounded mb-4" />
-        <div className="h-8 w-48 bg-stone-100 rounded" />
+      <div className="bg-white dark:bg-stone-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-stone-800 shadow-sm animate-pulse">
+        <div className="h-4 w-24 bg-stone-100 dark:bg-stone-800 rounded mb-4" />
+        <div className="h-8 w-48 bg-stone-100 dark:bg-stone-800 rounded" />
       </div>
     );
   }
 
   return (
     <>
-      <div className="bg-white p-8 rounded-[2.5rem] border border-stone-200 shadow-sm space-y-6">
+      <div className="bg-white dark:bg-stone-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+            <div className="h-12 w-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center">
               <Wallet className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Saldo Disponível</p>
-              <h2 className="text-3xl font-black text-stone-900">
+              <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Saldo Disponível</p>
+              <h2 className="text-3xl font-black text-stone-900 dark:text-white">
                 {wallet?.balance.toLocaleString() || '0,00'} Kz
               </h2>
             </div>
           </div>
           <button 
             onClick={() => setShowWithdrawModal(true)}
-            className="px-6 py-3 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-all flex items-center gap-2"
+            className="px-6 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-2xl font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition-all flex items-center gap-2"
           >
             <ArrowUpRight className="h-4 w-4" />
             Sacar
           </button>
         </div>
 
-        <div className="pt-6 border-t border-stone-100 flex items-center gap-6">
-          <div className="flex items-center gap-2 text-stone-500">
+        <div className="pt-6 border-t border-stone-100 dark:border-stone-800 flex items-center gap-6">
+          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
             <Clock className="h-4 w-4" />
             <span className="text-sm font-medium">Pendente:</span>
-            <span className="text-sm font-bold text-stone-900">{wallet?.pending_balance.toLocaleString() || '0,00'} Kz</span>
+            <span className="text-sm font-bold text-stone-900 dark:text-white">{wallet?.pending_balance.toLocaleString() || '0,00'} Kz</span>
           </div>
-          <div className="h-4 w-px bg-stone-100" />
-          <div className="flex items-center gap-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+          <div className="h-4 w-px bg-stone-100 dark:bg-stone-800" />
+          <div className="flex items-center gap-1 text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">
             <AlertCircle className="h-3 w-3" />
             Liberação em 7 dias
           </div>
@@ -184,50 +184,50 @@ export default function WalletCard() {
       {/* Withdraw Modal */}
       {showWithdrawModal && (
         <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 border border-stone-200 shadow-2xl space-y-6 relative overflow-hidden">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-[2.5rem] p-8 border border-stone-200 dark:border-stone-800 shadow-2xl space-y-6 relative overflow-hidden">
             {success ? (
               <div className="py-12 text-center space-y-4">
-                <div className="h-20 w-20 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto">
+                <div className="h-20 w-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-3xl flex items-center justify-center mx-auto">
                   <CheckCircle2 className="h-10 w-10" />
                 </div>
-                <h3 className="text-2xl font-black text-stone-900">Solicitação Enviada!</h3>
-                <p className="text-stone-500">Seu saque está sendo processado e será creditado em breve.</p>
+                <h3 className="text-2xl font-black text-stone-900 dark:text-white">Solicitação Enviada!</h3>
+                <p className="text-stone-500 dark:text-stone-400">Seu saque está sendo processado e será creditado em breve.</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-stone-900">Solicitar Saque</h3>
-                  <button onClick={() => setShowWithdrawModal(false)} className="text-stone-400 hover:text-stone-900">
+                  <h3 className="text-xl font-bold text-stone-900 dark:text-white">Solicitar Saque</h3>
+                  <button onClick={() => setShowWithdrawModal(false)} className="text-stone-400 hover:text-stone-900 dark:hover:text-white">
                     <X className="h-6 w-6" />
                   </button>
                 </div>
 
                 <form onSubmit={handleWithdraw} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Valor do Saque</label>
+                    <label className="block text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1.5">Valor do Saque</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-stone-400">Kz</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-stone-400 dark:text-stone-500">Kz</span>
                       <input 
                         type="number" 
                         value={withdrawAmount}
                         onChange={(e) => setWithdrawAmount(e.target.value)}
                         placeholder="0,00" 
-                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none font-bold" 
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none font-bold" 
                       />
                     </div>
                     <div className="flex justify-between mt-1">
-                      <p className="text-[10px] text-stone-400 font-medium">Disponível: {effectiveBalance.toLocaleString()} Kz</p>
+                      <p className="text-[10px] text-stone-400 dark:text-stone-500 font-medium">Disponível: {effectiveBalance.toLocaleString()} Kz</p>
                       {withdrawalFee > 0 && (
                         <p className="text-[10px] text-rose-400 font-bold">Taxa: {withdrawalFee.toLocaleString()} Kz</p>
                       )}
                     </div>
                     {withdrawAmount && !isNaN(parseFloat(withdrawAmount)) && withdrawalFee > 0 && (
-                      <p className="text-[10px] text-emerald-600 mt-1 font-bold">Você receberá: {(parseFloat(withdrawAmount) - withdrawalFee).toLocaleString()} Kz</p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 font-bold">Você receberá: {(parseFloat(withdrawAmount) - withdrawalFee).toLocaleString()} Kz</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Método de Recebimento</label>
+                    <label className="block text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1.5">Método de Recebimento</label>
                     <div className="grid grid-cols-1 gap-2">
                       {[
                         { id: 'IBAN', label: 'IBAN', icon: Building2 },
@@ -242,8 +242,8 @@ export default function WalletCard() {
                           onClick={() => setWithdrawMethod(method.id)}
                           className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                             withdrawMethod === method.id 
-                              ? 'border-indigo-600 bg-indigo-50 text-indigo-600' 
-                              : 'border-stone-100 hover:border-stone-200 text-stone-600'
+                              ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' 
+                              : 'border-stone-100 dark:border-stone-800 hover:border-stone-200 dark:hover:border-stone-700 text-stone-600 dark:text-stone-400'
                           }`}
                         >
                           <method.icon className="h-4 w-4" />
@@ -254,7 +254,7 @@ export default function WalletCard() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">
+                    <label className="block text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1.5">
                       {withdrawMethod === 'IBAN' ? 'Número do IBAN' : 'Número de Telefone / Conta'}
                     </label>
                     <input 
@@ -262,12 +262,12 @@ export default function WalletCard() {
                       value={withdrawDetails}
                       onChange={(e) => setWithdrawDetails(e.target.value)}
                       placeholder={withdrawMethod === 'IBAN' ? 'AO06 0000...' : '900 000 000'}
-                      className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                      className="w-full px-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
                     />
                   </div>
 
                   {error && (
-                    <div className="p-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <div className="p-3 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {error}
                     </div>
@@ -276,10 +276,10 @@ export default function WalletCard() {
                   <button 
                     type="submit"
                     disabled={withdrawing}
-                    className="w-full py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-2xl font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {withdrawing ? (
-                      <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="h-5 w-5 border-2 border-white/30 border-t-white dark:border-stone-900/30 dark:border-t-stone-900 rounded-full animate-spin" />
                     ) : (
                       'Confirmar Saque'
                     )}

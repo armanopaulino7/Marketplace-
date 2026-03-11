@@ -28,15 +28,24 @@ export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'pr
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('images')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload data:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('images')
         .getPublicUrl(filePath);
+
+      if (!publicUrl) {
+        throw new Error('Failed to get public URL for uploaded image');
+      }
 
       console.log('Image uploaded successfully. Public URL:', publicUrl);
       onUpload(publicUrl);
@@ -51,28 +60,28 @@ export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'pr
 
   return (
     <div className="space-y-2">
-      {label && <label className="block text-sm font-bold text-stone-700 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">{label}</label>}
       <div 
         onClick={() => !uploading && fileInputRef.current?.click()}
         className={`
-          relative h-32 w-full border-2 border-dashed border-stone-200 rounded-2xl 
+          relative h-32 w-full border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-2xl 
           flex flex-col items-center justify-center gap-2 cursor-pointer 
-          hover:border-indigo-300 hover:bg-indigo-50 transition-all group
+          hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group
           ${uploading ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
         {uploading ? (
           <>
-            <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
-            <p className="text-xs font-bold text-indigo-600">Carregando...</p>
+            <Loader2 className="h-8 w-8 text-indigo-600 dark:text-indigo-400 animate-spin" />
+            <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Carregando...</p>
           </>
         ) : (
           <>
-            <div className="p-3 bg-stone-50 rounded-xl group-hover:bg-white transition-colors">
-              <Upload className="h-6 w-6 text-stone-400 group-hover:text-indigo-600" />
+            <div className="p-3 bg-stone-50 dark:bg-stone-900 rounded-xl group-hover:bg-white dark:group-hover:bg-stone-800 transition-colors">
+              <Upload className="h-6 w-6 text-stone-400 dark:text-stone-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
             </div>
-            <p className="text-xs font-bold text-stone-500 group-hover:text-indigo-600">Clique para fazer upload</p>
-            <p className="text-[10px] text-stone-400">PNG, JPG ou WEBP até {maxSize}MB</p>
+            <p className="text-xs font-bold text-stone-500 dark:text-stone-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Clique para fazer upload</p>
+            <p className="text-[10px] text-stone-400 dark:text-stone-500">PNG, JPG ou WEBP até {maxSize}MB</p>
           </>
         )}
         <input 

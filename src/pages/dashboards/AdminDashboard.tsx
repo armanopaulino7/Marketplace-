@@ -285,44 +285,44 @@ export default function AdminDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-stone-900">Dashboard ADM</h1>
-              <p className="text-stone-500">Visão geral do sistema e métricas principais.</p>
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Dashboard ADM</h1>
+              <p className="text-stone-500 dark:text-stone-400">Visão geral do sistema e métricas principais.</p>
             </div>
 
             <WalletCard />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600', trend: '+12%', trendUp: true },
-                { label: 'Vendas Mensais', value: `${stats.sales.toLocaleString()} Kz`, icon: BarChart3, color: 'bg-emerald-50 text-emerald-600', trend: '+8%', trendUp: true },
-                { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600', trend: '-2%', trendUp: false },
-                { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600', trend: '+5', trendUp: true },
+                { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400', trend: '+12%', trendUp: true },
+                { label: 'Vendas Mensais', value: `${stats.sales.toLocaleString()} Kz`, icon: BarChart3, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', trend: '+8%', trendUp: true },
+                { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400', trend: '-2%', trendUp: false },
+                { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400', trend: '+5', trendUp: true },
               ].map((stat, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm">
+                <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <div className={`p-3 rounded-2xl ${stat.color}`}>
                       <stat.icon className="h-6 w-6" />
                     </div>
-                    <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${stat.trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                    <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${stat.trendUp ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
                       {stat.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                       {stat.trend}
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-stone-900">{stat.value}</div>
-                  <div className="text-sm text-stone-500">{stat.label}</div>
+                  <div className="text-2xl font-bold text-stone-900 dark:text-white">{stat.value}</div>
+                  <div className="text-sm text-stone-500 dark:text-stone-400">{stat.label}</div>
                 </div>
               ))}
             </div>
 
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-stone-100">
-                <h2 className="text-lg font-bold text-stone-900">Atividade Recente do Sistema</h2>
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-stone-100 dark:border-stone-800">
+                <h2 className="text-lg font-bold text-stone-900 dark:text-white">Atividade Recente do Sistema</h2>
               </div>
               <div className="p-6">
                 <div className="space-y-4">
                   <div className="py-12 text-center space-y-4">
-                    <Clock className="h-12 w-12 text-stone-100 mx-auto" />
-                    <p className="text-stone-500">Nenhuma atividade recente registrada.</p>
+                    <Clock className="h-12 w-12 text-stone-100 dark:text-stone-800 mx-auto" />
+                    <p className="text-stone-500 dark:text-stone-400">Nenhuma atividade recente registrada.</p>
                   </div>
                 </div>
               </div>
@@ -333,40 +333,40 @@ export default function AdminDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-stone-900">Gestão Financeira</h1>
-              <p className="text-stone-500">Aprove ou rejeite solicitações de saque dos usuários.</p>
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Gestão Financeira</h1>
+              <p className="text-stone-500 dark:text-stone-400">Aprove ou rejeite solicitações de saque dos usuários.</p>
             </div>
 
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-stone-900">Saques Pendentes</h2>
-                <span className="px-3 py-1 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold">
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-stone-900 dark:text-white">Saques Pendentes</h2>
+                <span className="px-3 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl text-xs font-bold">
                   {pendingWithdrawals.length} solicitações
                 </span>
               </div>
-              <div className="divide-y divide-stone-100">
+              <div className="divide-y divide-stone-100 dark:divide-stone-800">
                 {pendingWithdrawals.length === 0 ? (
                   <div className="p-12 text-center space-y-4">
-                    <div className="h-16 w-16 bg-stone-50 text-stone-300 rounded-full flex items-center justify-center mx-auto">
+                    <div className="h-16 w-16 bg-stone-50 dark:bg-stone-800 text-stone-300 dark:text-stone-600 rounded-full flex items-center justify-center mx-auto">
                       <Wallet className="h-8 w-8" />
                     </div>
-                    <p className="text-stone-500">Nenhuma solicitação de saque pendente.</p>
+                    <p className="text-stone-500 dark:text-stone-400">Nenhuma solicitação de saque pendente.</p>
                   </div>
                 ) : (
                   pendingWithdrawals.map((withdrawal) => (
-                    <div key={withdrawal.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 transition-all">
+                    <div key={withdrawal.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-all">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400">
+                        <div className="h-12 w-12 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center text-stone-400 dark:text-stone-500">
                           <Wallet className="h-6 w-6" />
                         </div>
                         <div>
-                          <div className="font-bold text-stone-900">{withdrawal.amount.toLocaleString()} Kz</div>
-                          <div className="text-xs text-stone-500">{withdrawal.profiles?.email} • {withdrawal.method}</div>
-                          <div className="text-[10px] font-mono text-stone-400 mt-1">{withdrawal.details?.info}</div>
+                          <div className="font-bold text-stone-900 dark:text-white">{withdrawal.amount.toLocaleString()} Kz</div>
+                          <div className="text-xs text-stone-500 dark:text-stone-400">{withdrawal.profiles?.email} • {withdrawal.method}</div>
+                          <div className="text-[10px] font-mono text-stone-400 dark:text-stone-500 mt-1">{withdrawal.details?.info}</div>
                           {withdrawal.details?.fee > 0 && (
                             <div className="mt-1 flex gap-2">
-                              <span className="text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold">Taxa: {withdrawal.details.fee} Kz</span>
-                              <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-bold">Líquido: {withdrawal.details.net_amount} Kz</span>
+                              <span className="text-[10px] bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded font-bold">Taxa: {withdrawal.details.fee} Kz</span>
+                              <span className="text-[10px] bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded font-bold">Líquido: {withdrawal.details.net_amount} Kz</span>
                             </div>
                           )}
                         </div>
@@ -374,7 +374,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={() => handleWithdrawalAction(withdrawal.id, 'rejected')}
-                          className="px-4 py-2 text-rose-600 font-bold hover:bg-rose-50 rounded-xl transition-all text-sm"
+                          className="px-4 py-2 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all text-sm"
                         >
                           Rejeitar
                         </button>
@@ -396,11 +396,11 @@ export default function AdminDashboard() {
       case 'home':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Home</h1>
-            <div className="bg-white p-8 rounded-3xl border border-stone-200 text-center space-y-4">
-              <HomeIcon className="h-16 w-16 text-stone-200 mx-auto" />
-              <h2 className="text-xl font-bold text-stone-900">Página Inicial do Marketplace</h2>
-              <p className="text-stone-500 max-w-md mx-auto">Aqui você pode configurar como a página inicial do marketplace aparece para os visitantes.</p>
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Home</h1>
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+              <HomeIcon className="h-16 w-16 text-stone-200 dark:text-stone-800 mx-auto" />
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white">Página Inicial do Marketplace</h2>
+              <p className="text-stone-500 dark:text-stone-400 max-w-md mx-auto">Aqui você pode configurar como a página inicial do marketplace aparece para os visitantes.</p>
               <button className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all">Editar Layout da Home</button>
             </div>
           </div>
@@ -409,7 +409,7 @@ export default function AdminDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-stone-900">Aprovação de Produtos</h1>
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Aprovação de Produtos</h1>
               <button 
                 onClick={fetchPendingProducts}
                 className="p-2 text-stone-400 hover:text-indigo-600 transition-colors"
@@ -421,36 +421,36 @@ export default function AdminDashboard() {
 
             {loading ? (
               <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+                <div className="h-8 w-8 border-4 border-indigo-100 dark:border-stone-800 border-t-indigo-600 rounded-full animate-spin" />
               </div>
             ) : pendingProducts.length === 0 ? (
-              <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4">
-                <Package className="h-16 w-16 text-stone-100 mx-auto" />
-                <h2 className="text-xl font-bold text-stone-900">Tudo em dia!</h2>
-                <p className="text-stone-500">Não há produtos pendentes de aprovação no momento.</p>
+              <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+                <Package className="h-16 w-16 text-stone-100 dark:text-stone-800 mx-auto" />
+                <h2 className="text-xl font-bold text-stone-900 dark:text-white">Tudo em dia!</h2>
+                <p className="text-stone-500 dark:text-stone-400">Não há produtos pendentes de aprovação no momento.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {pendingProducts.map((product) => (
-                  <div key={product.id} className="bg-white p-6 rounded-3xl border border-stone-200 flex flex-col sm:flex-row items-center gap-6">
-                    <div className="h-24 w-24 bg-stone-100 rounded-2xl flex items-center justify-center overflow-hidden">
+                  <div key={product.id} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
+                    <div className="h-24 w-24 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center overflow-hidden">
                       {product.images?.[0] ? (
                         <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
-                        <Package className="h-10 w-10 text-stone-300" />
+                        <Package className="h-10 w-10 text-stone-300 dark:text-stone-600" />
                       )}
                     </div>
                     <div className="flex-1 text-center sm:text-left">
-                      <h3 className="font-bold text-stone-900 text-lg">{product.name}</h3>
-                      <p className="text-sm text-stone-500">Produtor: {product.profiles?.email} • {product.price.toLocaleString()} Kz</p>
-                      <p className="text-xs text-indigo-600 font-bold mt-1 flex items-center gap-1">
+                      <h3 className="font-bold text-stone-900 dark:text-white text-lg">{product.name}</h3>
+                      <p className="text-sm text-stone-500 dark:text-stone-400">Produtor: {product.profiles?.email} • {product.price.toLocaleString()} Kz</p>
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold mt-1 flex items-center gap-1">
                         <Truck className="h-3 w-3" />
                         Pickup: {product.pickup_address}
                       </p>
                       <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-2">
-                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-lg">{product.category}</span>
-                        <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">{product.subcategory}</span>
-                        <span className="px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase rounded-lg">Comissão: {product.commission_rate}%</span>
+                        <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase rounded-lg">{product.category}</span>
+                        <span className="px-2 py-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-[10px] font-bold uppercase rounded-lg">{product.subcategory}</span>
+                        <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase rounded-lg">Comissão: {product.commission_rate}%</span>
                       </div>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
                       </button>
                       <button 
                         onClick={() => handleProductAction(product.id, 'rejected')}
-                        className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 transition-all"
+                        className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all"
                       >
                         Recusar
                       </button>
@@ -476,42 +476,42 @@ export default function AdminDashboard() {
       case 'gestao-usuarios':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Gestão de Usuários</h1>
-            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Gestão de Usuários</h1>
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-stone-50 border-b border-stone-100">
-                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Usuário</th>
-                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Perfil</th>
-                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Ações</th>
+                  <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800">
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Usuário</th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Perfil</th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-stone-500">
+                      <td colSpan={4} className="px-6 py-12 text-center text-stone-500 dark:text-stone-400">
                         Nenhum usuário encontrado.
                       </td>
                     </tr>
                   ) : (
                     users.map((u) => (
-                      <tr key={u.id} className="hover:bg-stone-50 transition-colors">
+                      <tr key={u.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="font-bold text-stone-900">{u.email}</div>
-                          <div className="text-xs text-stone-500">ID: {u.id.substring(0, 8)}...</div>
+                          <div className="font-bold text-stone-900 dark:text-white">{u.email}</div>
+                          <div className="text-xs text-stone-500 dark:text-stone-500">ID: {u.id.substring(0, 8)}...</div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold uppercase rounded-lg">{u.role}</span>
+                          <span className="px-2 py-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-[10px] font-bold uppercase rounded-lg">{u.role}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5">
                             <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                            <span className="text-sm text-stone-600">Ativo</span>
+                            <span className="text-sm text-stone-600 dark:text-stone-400">Ativo</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <button className="text-indigo-600 font-bold text-sm hover:underline">Editar</button>
+                        <td className="px-6 py-4 text-right">
+                          <button className="text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline">Editar</button>
                         </td>
                       </tr>
                     ))
@@ -524,8 +524,8 @@ export default function AdminDashboard() {
       case 'carteira':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Carteira Administrativa</h1>
-            <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Carteira Administrativa</h1>
+            <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-indigo-100 dark:shadow-none relative overflow-hidden">
               <div className="relative z-10">
                 <p className="text-indigo-100 text-sm font-medium mb-1">Saldo Total em Custódia</p>
                 <h2 className="text-4xl font-black">1.245.850,00 Kz</h2>
@@ -547,19 +547,19 @@ export default function AdminDashboard() {
       case 'aprovacao-saque':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Solicitações de Saque</h1>
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Solicitações de Saque</h1>
             <div className="space-y-4">
               {[1, 2].map((_, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-stone-200 flex flex-col sm:flex-row items-center gap-6">
-                  <div className="h-14 w-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600">
+                <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
+                  <div className="h-14 w-14 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center text-orange-600 dark:text-orange-400">
                     <Clock className="h-7 w-7" />
                   </div>
                   <div className="flex-1 text-center sm:text-left">
                     <div className="flex items-center justify-center sm:justify-start gap-2">
-                      <h3 className="font-bold text-stone-900">1.500,00 Kz</h3>
-                      <span className="px-2 py-0.5 bg-stone-100 text-stone-500 text-[10px] font-bold rounded uppercase">Pendente</span>
+                      <h3 className="font-bold text-stone-900 dark:text-white">1.500,00 Kz</h3>
+                      <span className="px-2 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 text-[10px] font-bold rounded uppercase">Pendente</span>
                     </div>
-                    <p className="text-sm text-stone-500">Solicitado por: produtor@exemplo.com • Há 2 dias</p>
+                    <p className="text-sm text-stone-500 dark:text-stone-400">Solicitado por: produtor@exemplo.com • Há 2 dias</p>
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <button className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all">Aprovar Saque</button>
@@ -574,25 +574,25 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold text-stone-900">Taxas de Entrega</h1>
-                <p className="text-stone-500">Gerencie os valores de entrega por bairro.</p>
+                <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Taxas de Entrega</h1>
+                <p className="text-stone-500 dark:text-stone-400">Gerencie os valores de entrega por bairro.</p>
               </div>
               <button 
                 onClick={fetchDeliveryFees}
-                className="p-3 bg-stone-100 text-stone-600 rounded-2xl hover:bg-stone-200 transition-all"
+                className="p-3 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-2xl hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
                 title="Atualizar Lista"
               >
                 <Clock className={loading ? "animate-spin" : ""} />
               </button>
             </div>
 
-            <div className="bg-white p-8 rounded-3xl border border-stone-200">
-              <h2 className="text-lg font-bold text-stone-900 mb-6">
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800">
+              <h2 className="text-lg font-bold text-stone-900 dark:text-white mb-6">
                 {editingFee ? 'Editar Taxa' : 'Adicionar Novo Bairro'}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-1">
-                  <label className="block text-sm font-bold text-stone-700 mb-1">Bairro</label>
+                  <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Bairro</label>
                   <input 
                     type="text" 
                     placeholder="Ex: Talatona"
@@ -601,11 +601,11 @@ export default function AdminDashboard() {
                       ? setEditingFee({...editingFee, neighborhood: e.target.value})
                       : setNewFee({...newFee, neighborhood: e.target.value})
                     }
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
                   />
                 </div>
                 <div className="sm:col-span-1">
-                  <label className="block text-sm font-bold text-stone-700 mb-1">Taxa (Kz)</label>
+                  <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Taxa (Kz)</label>
                   <input 
                     type="number" 
                     placeholder="Ex: 1500"
@@ -614,7 +614,7 @@ export default function AdminDashboard() {
                       ? setEditingFee({...editingFee, fee: e.target.value})
                       : setNewFee({...newFee, fee: e.target.value})
                     }
-                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
                   />
                 </div>
                 <div className="sm:col-span-1 flex items-end gap-2">
@@ -628,7 +628,7 @@ export default function AdminDashboard() {
                       </button>
                       <button 
                         onClick={() => setEditingFee(null)}
-                        className="flex-1 bg-stone-100 text-stone-600 py-3 rounded-2xl font-bold hover:bg-stone-200 transition-all"
+                        className="flex-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 py-3 rounded-2xl font-bold hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
                       >
                         Cancelar
                       </button>
@@ -636,7 +636,7 @@ export default function AdminDashboard() {
                   ) : (
                     <button 
                       onClick={handleAddDeliveryFee}
-                      className="w-full bg-stone-900 text-white py-3 rounded-2xl font-bold hover:bg-stone-800 transition-all"
+                      className="w-full bg-stone-900 dark:bg-stone-700 text-white py-3 rounded-2xl font-bold hover:bg-stone-800 dark:hover:bg-stone-600 transition-all"
                     >
                       Adicionar
                     </button>
@@ -645,38 +645,38 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-stone-50 border-b border-stone-100">
-                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Bairro</th>
-                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider">Taxa</th>
-                    <th className="px-6 py-4 text-xs font-bold text-stone-400 uppercase tracking-wider text-right">Ações</th>
+                  <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800">
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Bairro</th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">Taxa</th>
+                    <th className="px-6 py-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                   {deliveryFees.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-6 py-12 text-center text-stone-500">
+                      <td colSpan={3} className="px-6 py-12 text-center text-stone-500 dark:text-stone-400">
                         Nenhuma taxa de entrega cadastrada.
                       </td>
                     </tr>
                   ) : (
                     deliveryFees.map((fee) => (
-                      <tr key={fee.id} className="hover:bg-stone-50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-stone-900">{fee.neighborhood}</td>
-                        <td className="px-6 py-4 text-stone-600">{fee.fee.toLocaleString()} Kz</td>
+                      <tr key={fee.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors">
+                        <td className="px-6 py-4 font-bold text-stone-900 dark:text-white">{fee.neighborhood}</td>
+                        <td className="px-6 py-4 text-stone-600 dark:text-stone-400">{fee.fee.toLocaleString()} Kz</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button 
                               onClick={() => setEditingFee({ ...fee, fee: fee.fee.toString() })}
-                              className="text-indigo-600 font-bold text-sm hover:underline"
+                              className="text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline"
                             >
                               Editar
                             </button>
                             <button 
                               onClick={() => handleDeleteDeliveryFee(fee.id)}
-                              className="text-rose-600 font-bold text-sm hover:underline"
+                              className="text-rose-600 dark:text-rose-400 font-bold text-sm hover:underline"
                             >
                               Remover
                             </button>
@@ -693,11 +693,11 @@ export default function AdminDashboard() {
       case 'perfil':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Seu Perfil</h1>
-            <div className="bg-white p-8 rounded-3xl border border-stone-200 max-w-2xl">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seu Perfil</h1>
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
-                  <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center text-3xl font-bold text-indigo-600 overflow-hidden border-4 border-white shadow-sm">
+                  <div className="h-24 w-24 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-3xl font-bold text-indigo-600 dark:text-indigo-400 overflow-hidden border-4 border-white dark:border-stone-800 shadow-sm">
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
@@ -731,22 +731,22 @@ export default function AdminDashboard() {
                       folder="avatars"
                     />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full shadow-md border border-stone-100 text-stone-400">
+                  <div className="absolute -bottom-1 -right-1 bg-white dark:bg-stone-800 p-1.5 rounded-full shadow-md border border-stone-100 dark:border-stone-700 text-stone-400 dark:text-stone-500">
                     <Camera className="h-4 w-4" />
                   </div>
                 </div>
                 <div className="text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-stone-900">{user?.email?.split('@')[0]}</h2>
-                  <p className="text-stone-500">{user?.email}</p>
-                  <span className="mt-2 inline-block px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-widest">Acesso Total</span>
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">{user?.email?.split('@')[0]}</h2>
+                  <p className="text-stone-500 dark:text-stone-400">{user?.email}</p>
+                  <span className="mt-2 inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full uppercase tracking-widest">Acesso Total</span>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 rounded-2xl font-bold text-stone-700 hover:bg-stone-50 transition-all">
+                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
                   <Settings className="h-5 w-5" />
                   Configurações
                 </button>
-                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 rounded-2xl font-bold text-stone-700 hover:bg-stone-50 transition-all">
+                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
                   <UserIcon className="h-5 w-5" />
                   Editar Dados
                 </button>

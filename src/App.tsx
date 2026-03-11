@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { isSupabaseConfigured } from './lib/supabase';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, WifiOff, RefreshCw } from 'lucide-react';
 
 // Pages
 import Login from './pages/Login';
@@ -38,15 +40,56 @@ function ConfigWarning() {
   );
 }
 
+function NetworkError() {
+  return (
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-3xl shadow-xl p-8 border border-rose-100 dark:border-rose-900/30 text-center">
+        <div className="bg-rose-50 dark:bg-rose-900/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <WifiOff className="h-8 w-8 text-rose-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-stone-900 dark:text-white mb-4">Erro de Conexão</h1>
+        <p className="text-stone-600 dark:text-stone-400 mb-6">
+          Não foi possível conectar ao servidor. Isso pode ser devido a uma conexão lenta ou as chaves do Supabase estarem incorretas.
+        </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+        >
+          <RefreshCw className="h-5 w-5" />
+          Tentar Novamente
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [hasNetworkError, setHasNetworkError] = useState(false);
+
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      if (event.reason?.message === 'Failed to fetch' || event.reason?.name === 'TypeError' && event.reason?.message.includes('fetch')) {
+        setHasNetworkError(true);
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => window.removeEventListener('unhandledrejection', handleRejection);
+  }, []);
+
   if (!isSupabaseConfigured) {
     return <ConfigWarning />;
   }
 
+  if (hasNetworkError) {
+    return <NetworkError />;
+  }
+
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -86,5 +129,6 @@ export default function App() {
         </Routes>
       </Router>
     </AuthProvider>
-  );
+  </ThemeProvider>
+);
 }

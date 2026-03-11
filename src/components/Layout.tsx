@@ -18,8 +18,10 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { Sun, Moon } from 'lucide-react';
 
 interface MenuItem {
   id: string;
@@ -35,6 +37,7 @@ interface LayoutProps {
 
 export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const { profile, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -88,19 +91,27 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const menuItems = getMenuItems();
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col md:flex-row transition-colors duration-300">
       {/* Mobile Header */}
-      <header className="md:hidden bg-white border-b border-stone-200 h-16 flex items-center justify-between px-4 sticky top-0 z-30">
+      <header className="md:hidden bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 h-16 flex items-center justify-between px-4 sticky top-0 z-30">
         <div className="flex items-center gap-2">
           <ShoppingBag className="h-6 w-6 text-indigo-600" />
-          <span className="font-bold text-lg text-stone-900">Marketplace</span>
+          <span className="font-bold text-lg text-stone-900 dark:text-white">Marketplace</span>
         </div>
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-2 text-stone-600 hover:bg-stone-100 rounded-xl"
-        >
-          {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={toggleTheme}
+            className="p-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+          >
+            {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          </button>
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+          >
+            {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </header>
 
       {/* Sidebar Overlay */}
@@ -113,15 +124,21 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 w-64 bg-white border-r border-stone-200 z-50 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+        "fixed inset-y-0 left-0 w-64 bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 z-50 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-full flex flex-col">
-          <div className="h-16 hidden md:flex items-center px-6 border-b border-stone-100">
+          <div className="h-16 hidden md:flex items-center justify-between px-6 border-b border-stone-100 dark:border-stone-800">
             <div className="flex items-center gap-2">
               <ShoppingBag className="h-6 w-6 text-indigo-600" />
-              <span className="font-bold text-xl text-stone-900">Marketplace</span>
+              <span className="font-bold text-xl text-stone-900 dark:text-white">Marketplace</span>
             </div>
+            <button 
+              onClick={toggleTheme}
+              className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
+            >
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
@@ -135,8 +152,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all",
                   activeTab === item.id
-                    ? "bg-indigo-50 text-indigo-600 shadow-sm shadow-indigo-100"
-                    : "text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+                    ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-sm shadow-indigo-100 dark:shadow-none"
+                    : "text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white"
                 )}
               >
                 <item.icon className={cn("h-5 w-5", activeTab === item.id ? "text-indigo-600" : "text-stone-400")} />
@@ -145,10 +162,10 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
             ))}
           </div>
 
-          <div className="p-4 border-t border-stone-100">
-            <div className="bg-stone-50 rounded-2xl p-4 mb-4">
+          <div className="p-4 border-t border-stone-100 dark:border-stone-800">
+            <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-4 mb-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold overflow-hidden border-2 border-white shadow-sm">
+                <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold overflow-hidden border-2 border-white dark:border-stone-700 shadow-sm">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
@@ -156,14 +173,14 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-stone-900 truncate">{profile?.email}</p>
-                  <p className="text-xs text-stone-500 uppercase tracking-wider font-semibold">{profile?.role}</p>
+                  <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{profile?.email}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 uppercase tracking-wider font-semibold">{profile?.role}</p>
                 </div>
               </div>
             </div>
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
             >
               <LogOut className="h-5 w-5" />
               Sair da Conta
