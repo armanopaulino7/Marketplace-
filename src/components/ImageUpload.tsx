@@ -9,7 +9,7 @@ interface ImageUploadProps {
   folder?: string;
 }
 
-export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'products' }: ImageUploadProps) {
+export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'produtos' }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

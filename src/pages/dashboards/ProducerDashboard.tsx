@@ -42,7 +42,7 @@ export default function ProducerDashboard() {
     pickup_address: '',
     phone1: '',
     phone2: '',
-    images: [] as string[],
+    imagens: [] as string[],
     variations: {
       tamanho: [] as string[],
       peso: [] as string[],
@@ -71,7 +71,7 @@ export default function ProducerDashboard() {
     if (!user) return;
     try {
       const { count: activeCount } = await supabase
-        .from('products')
+        .from('produtos')
         .select('*', { count: 'exact', head: true })
         .eq('producer_id', user.id)
         .eq('status', 'approved');
@@ -93,7 +93,7 @@ export default function ProducerDashboard() {
         .from('affiliations')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'approved')
-        .in('product_id', (await supabase.from('products').select('id').eq('producer_id', user.id)).data?.map(p => p.id) || []);
+        .in('product_id', (await supabase.from('produtos').select('id').eq('producer_id', user.id)).data?.map(p => p.id) || []);
 
       setStats({
         activeProducts: activeCount || 0,
@@ -110,7 +110,7 @@ export default function ProducerDashboard() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, products(name)')
+        .select('*, produtos(name)')
         .eq('producer_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -126,7 +126,7 @@ export default function ProducerDashboard() {
     if (!user) return;
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('produtos')
         .select('*')
         .eq('producer_id', user.id)
         .eq('status', 'approved')
@@ -163,17 +163,17 @@ export default function ProducerDashboard() {
   };
 
   const handleAddImage = (url: string) => {
-    if (formData.images.length >= 5) return;
+    if (formData.imagens.length >= 5) return;
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, url]
+      imagens: [...prev.imagens, url]
     }));
   };
 
   const removeImage = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      imagens: prev.imagens.filter((_, i) => i !== index)
     }));
   };
 
@@ -181,7 +181,7 @@ export default function ProducerDashboard() {
     e.preventDefault();
     if (!user) return;
     
-    if (formData.images.length === 0) {
+    if (formData.imagens.length === 0) {
       setError('Adicione pelo menos uma imagem do produto.');
       return;
     }
@@ -201,7 +201,7 @@ export default function ProducerDashboard() {
       });
 
       const { error: insertError } = await supabase
-        .from('products')
+        .from('produtos')
         .insert({
           producer_id: user.id,
           name: formData.name,
@@ -214,7 +214,7 @@ export default function ProducerDashboard() {
           pickup_address: formData.pickup_address,
           phone1: formData.phone1,
           phone2: formData.phone2,
-          images: formData.images,
+          imagens: formData.imagens,
           variations: formData.variations,
           status: 'pending'
         });
@@ -233,7 +233,7 @@ export default function ProducerDashboard() {
         pickup_address: '',
         phone1: '',
         phone2: '',
-        images: [],
+        imagens: [],
         variations: { tamanho: [], peso: [], cor: [] }
       });
       
@@ -300,8 +300,8 @@ export default function ProducerDashboard() {
                     topProducts.map((product) => (
                       <div key={product.id} className="flex items-center gap-4 p-4 border border-stone-100 dark:border-stone-800 rounded-2xl hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all">
                         <div className="h-16 w-16 bg-stone-100 dark:bg-stone-800 rounded-xl flex items-center justify-center overflow-hidden">
-                          {product.images?.[0] ? (
-                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          {product.imagens?.[0] ? (
+                            <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
                             <Package className="h-8 w-8 text-stone-400" />
                           )}
@@ -566,11 +566,11 @@ export default function ProducerDashboard() {
                   
                   <ImageUpload 
                     onUpload={handleAddImage} 
-                    folder="products"
+                    folder="produtos"
                   />
 
                   <div className="grid grid-cols-2 gap-2">
-                    {formData.images.map((url, idx) => (
+                    {formData.imagens.map((url, idx) => (
                       <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-stone-100 dark:border-stone-800 group">
                         <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         <button 
@@ -582,7 +582,7 @@ export default function ProducerDashboard() {
                         </button>
                       </div>
                     ))}
-                    {formData.images.length === 0 && (
+                    {formData.imagens.length === 0 && (
                       <div className="col-span-2 aspect-video rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-800 flex flex-col items-center justify-center text-stone-400 dark:text-stone-600 gap-2">
                         <ImageIcon className="h-8 w-8" />
                         <p className="text-xs font-medium">Nenhuma imagem adicionada</p>
@@ -635,7 +635,7 @@ export default function ProducerDashboard() {
                         </div>
                         <div>
                           <div className="font-bold text-stone-900 dark:text-white">Pedido #{sale.id.substring(0, 8).toUpperCase()}</div>
-                          <div className="text-sm text-stone-500 dark:text-stone-400">{sale.products?.name} • {new Date(sale.created_at).toLocaleDateString()}</div>
+                          <div className="text-sm text-stone-500 dark:text-stone-400">{sale.produtos?.name} • {new Date(sale.created_at).toLocaleDateString()}</div>
                         </div>
                       </div>
                       <div className="text-right">

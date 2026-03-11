@@ -27,7 +27,7 @@ export default function ProductDetails() {
   const fetchProduct = async () => {
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('produtos')
         .select('*, profiles(email)')
         .eq('id', id)
         .single();
@@ -76,8 +76,8 @@ export default function ProductDetails() {
           {/* Images */}
           <div className="space-y-4">
             <div className="aspect-square bg-white rounded-[2.5rem] border border-stone-200 overflow-hidden shadow-sm">
-              {product.images?.[0] ? (
-                <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              {product.imagens?.[0] ? (
+                <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-stone-300">
                   <Package className="h-24 w-24" />
@@ -85,7 +85,7 @@ export default function ProductDetails() {
               )}
             </div>
             <div className="grid grid-cols-4 gap-4">
-              {product.images?.slice(1, 5).map((img: string, i: number) => (
+              {product.imagens?.slice(1, 5).map((img: string, i: number) => (
                 <div key={i} className="aspect-square bg-white rounded-2xl border border-stone-200 overflow-hidden cursor-pointer hover:border-indigo-500 transition-all">
                   <img src={img} alt={`${product.name} ${i+2}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>

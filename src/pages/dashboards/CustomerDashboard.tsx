@@ -65,7 +65,7 @@ export default function CustomerDashboard() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, products(*)')
+        .select('*, produtos(*)')
         .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
       
@@ -82,7 +82,7 @@ export default function CustomerDashboard() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('produtos')
         .select('*')
         .eq('status', 'approved')
         .order('created_at', { ascending: false });
@@ -149,10 +149,10 @@ export default function CustomerDashboard() {
                     myOrders.slice(0, 2).map((order) => (
                       <div key={order.id} className="flex flex-col sm:flex-row gap-4 group cursor-pointer" onClick={() => navigate(`/product/${order.product_id}`)}>
                         <div className="h-32 w-full sm:w-48 bg-stone-200 rounded-2xl flex-shrink-0 overflow-hidden relative">
-                          {order.products?.images?.[0] ? (
+                          {order.produtos?.imagens?.[0] ? (
                             <img 
-                              src={order.products.images[0]} 
-                              alt={order.products.name} 
+                              src={order.produtos.imagens[0]} 
+                              alt={order.produtos.name} 
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                             />
@@ -164,8 +164,8 @@ export default function CustomerDashboard() {
                         </div>
                         <div className="flex flex-col justify-between py-1">
                           <div>
-                            <h3 className="font-bold text-stone-900 text-lg group-hover:text-indigo-600 transition-colors line-clamp-1">{order.products?.name}</h3>
-                            <p className="text-sm text-stone-500 line-clamp-2">{order.products?.description}</p>
+                            <h3 className="font-bold text-stone-900 text-lg group-hover:text-indigo-600 transition-colors line-clamp-1">{order.produtos?.name}</h3>
+                            <p className="text-sm text-stone-500 line-clamp-2">{order.produtos?.description}</p>
                           </div>
                           <div className="mt-4 flex items-center gap-2">
                             <button className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">
@@ -229,8 +229,8 @@ export default function CustomerDashboard() {
                         className="bg-white border border-stone-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all text-left group cursor-pointer"
                       >
                         <div className="h-48 bg-stone-200 relative">
-                          {product.images?.[0] ? (
-                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          {product.imagens?.[0] ? (
+                            <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-stone-400">
                               <Package className="h-12 w-12" />
@@ -280,15 +280,15 @@ export default function CustomerDashboard() {
                     <div key={order.id} className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-stone-50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="h-16 w-16 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400 overflow-hidden">
-                          {order.products?.images?.[0] ? (
-                            <img src={order.products.images[0]} alt={order.products.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          {order.produtos?.imagens?.[0] ? (
+                            <img src={order.produtos.imagens[0]} alt={order.produtos.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
                             <ShoppingBag className="h-8 w-8" />
                           )}
                         </div>
                         <div>
                           <div className="font-bold text-stone-900">Pedido #{order.id.substring(0, 8).toUpperCase()}</div>
-                          <p className="text-sm text-stone-500">{order.products?.name} • {new Date(order.created_at).toLocaleDateString()}</p>
+                          <p className="text-sm text-stone-500">{order.produtos?.name} • {new Date(order.created_at).toLocaleDateString()}</p>
                           <div className="mt-1 flex items-center gap-2">
                             <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded uppercase">{order.status}</span>
                             <span className="text-[10px] text-stone-400 font-bold">{order.amount.toLocaleString()} Kz</span>

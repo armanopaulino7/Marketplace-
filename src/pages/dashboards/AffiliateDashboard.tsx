@@ -74,7 +74,7 @@ export default function AffiliateDashboard() {
     try {
       // Get all approved products
       const { data: products, error: pError } = await supabase
-        .from('products')
+        .from('produtos')
         .select('*, profiles(email)')
         .eq('status', 'approved');
 
@@ -105,7 +105,7 @@ export default function AffiliateDashboard() {
     try {
       const { data, error } = await supabase
         .from('affiliations')
-        .select('*, products(*, profiles(email))')
+        .select('*, produtos(*, profiles(email))')
         .eq('affiliate_id', user.id)
         .eq('status', 'approved');
 
@@ -190,8 +190,8 @@ export default function AffiliateDashboard() {
                   <div key={product.id} className="p-5 border border-stone-100 dark:border-stone-800 rounded-3xl hover:border-indigo-200 dark:hover:border-indigo-900 transition-all group bg-stone-50/50 dark:bg-stone-800/20">
                     <div className="flex items-start justify-between mb-4">
                       <div className="h-14 w-14 bg-white dark:bg-stone-800 rounded-2xl shadow-sm flex items-center justify-center text-stone-400 dark:text-stone-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors overflow-hidden">
-                        {product.images?.[0] ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        {product.imagens?.[0] ? (
+                          <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <LinkIcon className="h-7 w-7" />
                         )}
@@ -266,8 +266,8 @@ export default function AffiliateDashboard() {
                 {availableProducts.map((product) => (
                   <div key={product.id} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
                     <div className="h-24 w-24 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center overflow-hidden">
-                      {product.images?.[0] ? (
-                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      {product.imagens?.[0] ? (
+                        <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
                         <ShoppingBag className="h-10 w-10 text-stone-300 dark:text-stone-600" />
                       )}
@@ -316,15 +316,15 @@ export default function AffiliateDashboard() {
                   <div key={aff.id} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 space-y-4">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 overflow-hidden">
-                        {aff.products?.images?.[0] ? (
-                          <img src={aff.products.images[0]} alt={aff.products.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        {aff.produtos?.imagens?.[0] ? (
+                          <img src={aff.produtos.imagens[0]} alt={aff.produtos.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <CheckCircle2 className="h-6 w-6" />
                         )}
                       </div>
                       <div>
-                        <h3 className="font-bold text-stone-900 dark:text-white line-clamp-1">{aff.products?.name}</h3>
-                        <p className="text-xs text-stone-500 dark:text-stone-400">Comissão: {aff.products?.commission_rate}%</p>
+                        <h3 className="font-bold text-stone-900 dark:text-white line-clamp-1">{aff.produtos?.name}</h3>
+                        <p className="text-xs text-stone-500 dark:text-stone-400">Comissão: {aff.produtos?.commission_rate}%</p>
                       </div>
                     </div>
                     

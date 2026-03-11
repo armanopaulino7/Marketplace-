@@ -55,7 +55,7 @@ export default function Checkout() {
   const fetchProduct = async () => {
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('produtos')
         .select('*')
         .eq('id', id)
         .single();
@@ -277,8 +277,8 @@ export default function Checkout() {
               
               <div className="flex gap-4">
                 <div className="h-20 w-20 bg-stone-100 rounded-2xl overflow-hidden flex-shrink-0">
-                  {product.images?.[0] ? (
-                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  {product.imagens?.[0] ? (
+                    <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-stone-300">
                       <Package className="h-8 w-8" />

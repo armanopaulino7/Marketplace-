@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [newFee, setNewFee] = useState({ neighborhood: '', fee: '' });
   const [editingFee, setEditingFee] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     users: 0,
     sales: 0,
@@ -41,12 +42,104 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    fetchPendingProducts();
-    fetchPendingWithdrawals();
-    fetchStats();
-    fetchDeliveryFees();
-    fetchUsers();
-  }, []);
+    if (user && profile?.role === 'adm') {
+      fetchStats();
+      fetchPendingProducts();
+      fetchPendingWithdrawals();
+      fetchDeliveryFees();
+      fetchUsers();
+    }
+  }, [user, profile, activeTab]);
+
+  const fetchStats = async () => {
+    try {
+      const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      const { count: pendingProdCount } = await supabase.from('produtos').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      const { count: pendingWithCount } = await supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      
+      // Fetch total sales (platform fees + delivery fees)
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('amount, delivery_fee');
+      
+      let totalSales = 0;
+      if (!ordersError && orders) {
+        // Platform fee is 10% of (total - delivery_fee)
+        totalSales = orders.reduce((acc, order) => {
+          const productPrice = order.amount - (order.delivery_fee || 0);
+          const platformFee = productPrice * 0.10;
+          return acc + platformFee + (order.delivery_fee || 0);
+        }, 0);
+      }
+      
+      setStats({
+        users: usersCount || 0,
+        sales: totalSales,
+        pendingWithdrawals: pendingWithCount || 0,
+        pendingProducts: pendingProdCount || 0
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  const fetchPendingProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Try with join first
+      const { data, error: fetchError } = await supabase
+        .from('produtos')
+        .select('*, profiles(email)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.warn('Join with profiles failed, fetching without join:', fetchError);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+        
+        if (fallbackError) throw fallbackError;
+        setPendingProducts(fallbackData || []);
+      } else {
+        setPendingProducts(data || []);
+      }
+    } catch (err: any) {
+      console.error('Error fetching pending products:', err);
+      setError(err.message || 'Erro ao carregar produtos pendentes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPendingWithdrawals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('withdrawal_requests')
+        .select('*, profiles(email)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Join with profiles failed for withdrawals, fetching without join:', error);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('withdrawal_requests')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+        
+        if (fallbackError) throw fallbackError;
+        setPendingWithdrawals(fallbackData || []);
+      } else {
+        setPendingWithdrawals(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching pending withdrawals:', err);
+    }
+  };
 
   const fetchDeliveryFees = async () => {
     try {
@@ -147,75 +240,10 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-      const { count: pendingProdCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      const { count: pendingWithCount } = await supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      
-      // Fetch total sales (platform fees + delivery fees)
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select('amount, delivery_fee');
-      
-      let totalSales = 0;
-      if (!ordersError && orders) {
-        // Platform fee is 10% of (total - delivery_fee)
-        totalSales = orders.reduce((acc, order) => {
-          const productPrice = order.amount - (order.delivery_fee || 0);
-          const platformFee = productPrice * 0.10;
-          return acc + platformFee + (order.delivery_fee || 0);
-        }, 0);
-      }
-      
-      setStats({
-        users: usersCount || 0,
-        sales: totalSales,
-        pendingWithdrawals: pendingWithCount || 0,
-        pendingProducts: pendingProdCount || 0
-      });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
-  };
-
-  const fetchPendingProducts = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, profiles(email)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPendingProducts(data || []);
-    } catch (err) {
-      console.error('Error fetching pending products:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPendingWithdrawals = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('withdrawal_requests')
-        .select('*, profiles(email)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPendingWithdrawals(data || []);
-    } catch (err) {
-      console.error('Error fetching pending withdrawals:', err);
-    }
-  };
-
   const handleProductAction = async (productId: string, status: 'approved' | 'rejected') => {
     try {
       const { error } = await supabase
-        .from('products')
+        .from('produtos')
         .update({ status })
         .eq('id', productId);
 
@@ -419,6 +447,13 @@ export default function AdminDashboard() {
               </button>
             </div>
 
+            {error && (
+              <div className="bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-800 text-rose-600 dark:text-rose-400 p-4 rounded-2xl flex items-start gap-3 text-sm mb-4">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-4 border-indigo-100 dark:border-stone-800 border-t-indigo-600 rounded-full animate-spin" />
@@ -434,8 +469,8 @@ export default function AdminDashboard() {
                 {pendingProducts.map((product) => (
                   <div key={product.id} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
                     <div className="h-24 w-24 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center overflow-hidden">
-                      {product.images?.[0] ? (
-                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      {product.imagens?.[0] ? (
+                        <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
                         <Package className="h-10 w-10 text-stone-300 dark:text-stone-600" />
                       )}
