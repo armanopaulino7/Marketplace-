@@ -23,8 +23,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Session error:', error.message);
         // If session is invalid or refresh token not found, clear everything
-        if (error.message.includes('Refresh Token Not Found') || error.message.includes('invalid_refresh_token')) {
-          localStorage.removeItem('supabase.auth.token'); // Force clear local storage if needed
+        if (
+          error.message.includes('Refresh Token Not Found') || 
+          error.message.includes('invalid_refresh_token') ||
+          error.message.includes('Refresh Token is invalid')
+        ) {
+          // Aggressively clear all localStorage items that might be related to supabase auth
+          Object.keys(localStorage).forEach(key => {
+            if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
+              localStorage.removeItem(key);
+            }
+          });
           supabase.auth.signOut();
         }
         setUser(null);

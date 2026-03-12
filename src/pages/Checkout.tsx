@@ -25,6 +25,11 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('IBAN');
   const ref = searchParams.get('ref');
 
   useEffect(() => {
@@ -77,8 +82,26 @@ export default function Checkout() {
 
     setProcessing(true);
     try {
+      if (!customerName || !customerPhone) {
+        alert('Por favor, preencha seu nome e telefone.');
+        setProcessing(false);
+        return;
+      }
+
       if (!selectedNeighborhood && deliveryFees.length > 0) {
         alert('Por favor, selecione um bairro para entrega.');
+        setProcessing(false);
+        return;
+      }
+
+      if (!deliveryAddress) {
+        alert('Por favor, insira o endereço de entrega.');
+        setProcessing(false);
+        return;
+      }
+
+      if (!deliveryDate) {
+        alert('Por favor, selecione uma data para entrega.');
         setProcessing(false);
         return;
       }
@@ -100,6 +123,11 @@ export default function Checkout() {
           amount: totalOrderAmount,
           delivery_fee: selectedFee,
           neighborhood: selectedNeighborhood,
+          delivery_address: deliveryAddress,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          delivery_date: deliveryDate,
+          payment_method: paymentMethod,
           commission_amount: affiliateCommission,
           status: 'completed'
         })
@@ -197,29 +225,81 @@ export default function Checkout() {
           <div className="space-y-6">
             <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
               <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-indigo-600" />
+                Dados do Comprador
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Nome Completo</label>
+                  <input 
+                    type="text" 
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Seu nome completo" 
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Número de Telefone</label>
+                  <input 
+                    type="tel" 
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Seu número de telefone" 
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
+              <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
                 <Truck className="h-5 w-5 text-indigo-600" />
                 Entrega
               </h2>
               
-              <div>
-                <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Selecione seu Bairro</label>
-                <select 
-                  value={selectedNeighborhood}
-                  onChange={(e) => handleNeighborhoodChange(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
-                >
-                  <option value="">Escolha um bairro...</option>
-                  {deliveryFees.map((fee) => (
-                    <option key={fee.id} value={fee.neighborhood}>
-                      {fee.neighborhood} (+{fee.fee.toLocaleString()} Kz)
-                    </option>
-                  ))}
-                </select>
-                {selectedNeighborhood && (
-                  <p className="mt-2 text-xs text-emerald-600 font-bold">
-                    Taxa de entrega: {selectedFee.toLocaleString()} Kz
-                  </p>
-                )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Selecione seu Bairro</label>
+                  <select 
+                    value={selectedNeighborhood}
+                    onChange={(e) => handleNeighborhoodChange(e.target.value)}
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
+                  >
+                    <option value="">Escolha um bairro...</option>
+                    {deliveryFees.map((fee) => (
+                      <option key={fee.id} value={fee.neighborhood}>
+                        {fee.neighborhood} (+{fee.fee.toLocaleString()} Kz)
+                      </option>
+                    ))}
+                  </select>
+                  {selectedNeighborhood && (
+                    <p className="mt-2 text-xs text-emerald-600 font-bold">
+                      Taxa de entrega: {selectedFee.toLocaleString()} Kz
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Endereço de Entrega</label>
+                  <textarea 
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="Rua, número da casa, ponto de referência..." 
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium min-h-[100px]" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Dia da Entrega</label>
+                  <input 
+                    type="date" 
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium" 
+                  />
+                </div>
               </div>
             </div>
 
@@ -231,19 +311,29 @@ export default function Checkout() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Número do Cartão</label>
-                  <input type="text" placeholder="0000 0000 0000 0000" className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Forma de Pagamento</label>
+                  <select 
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
+                  >
+                    <option value="IBAN">IBAN</option>
+                    <option value="PayPay">PayPay</option>
+                    <option value="Multicaixa Express">Multicaixa Express</option>
+                    <option value="Unitel Money">Unitel Money</option>
+                    <option value="AfriMoney">AfriMoney</option>
+                    <option value="Pagamento na entrega">Pagamento na entrega</option>
+                  </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Validade</label>
-                    <input type="text" placeholder="MM/AA" className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
+
+                {paymentMethod !== 'Pagamento na entrega' && (
+                  <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                    <p className="text-xs text-stone-500 leading-relaxed">
+                      Após clicar em finalizar, você receberá os dados para pagamento via <strong>{paymentMethod}</strong>. 
+                      Sua compra será confirmada assim que o pagamento for validado.
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">CVV</label>
-                    <input type="text" placeholder="123" className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                  </div>
-                </div>
+                )}
               </div>
 
               <button 
@@ -256,7 +346,7 @@ export default function Checkout() {
                 ) : (
                   <>
                     <Lock className="h-5 w-5" />
-                    Finalizar Pagamento
+                    Finalizar Pedido
                   </>
                 )}
               </button>
