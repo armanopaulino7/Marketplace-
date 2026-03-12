@@ -317,16 +317,9 @@ export default function ProducerDashboard() {
                 <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Dashboard Produtor</h1>
                 <p className="text-stone-500 dark:text-stone-400">Gerencie seus produtos e acompanhe suas vendas.</p>
               </div>
-              <button 
-                onClick={() => setActiveTab('cadastrar-produto')}
-                className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none"
-              >
-                <Plus className="h-5 w-5" />
-                Novo Produto
-              </button>
             </div>
 
-            <WalletCard />
+            <WalletCard hideWithdraw={true} />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[

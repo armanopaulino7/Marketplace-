@@ -244,7 +244,7 @@ export default function AffiliateDashboard() {
               <p className="text-stone-500 dark:text-stone-400">Promova produtos e acompanhe suas comissões.</p>
             </div>
 
-            <WalletCard />
+            <WalletCard hideWithdraw={true} />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[

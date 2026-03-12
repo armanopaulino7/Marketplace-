@@ -18,7 +18,11 @@ interface WalletData {
   pending_balance: number;
 }
 
-export default function WalletCard() {
+interface WalletCardProps {
+  hideWithdraw?: boolean;
+}
+
+export default function WalletCard({ hideWithdraw = false }: WalletCardProps) {
   const { user, profile } = useAuth();
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [pendingWithdrawalTotal, setPendingWithdrawalTotal] = useState(0);
@@ -39,9 +43,6 @@ export default function WalletCard() {
 
   const fetchWallet = async () => {
     try {
-      // Release matured funds first
-      await supabase.rpc('release_matured_funds', { user_id_param: user?.id });
-
       const { data: walletData, error: walletError } = await supabase
         .from('wallets')
         .select('balance, pending_balance')
@@ -158,25 +159,21 @@ export default function WalletCard() {
               </h2>
             </div>
           </div>
-          <button 
-            onClick={() => setShowWithdrawModal(true)}
-            className="px-6 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-2xl font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition-all flex items-center gap-2"
-          >
-            <ArrowUpRight className="h-4 w-4" />
-            Sacar
-          </button>
+          {!hideWithdraw && (
+            <button 
+              onClick={() => setShowWithdrawModal(true)}
+              className="px-6 py-3 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-2xl font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition-all flex items-center gap-2"
+            >
+              <ArrowUpRight className="h-4 w-4" />
+              Sacar
+            </button>
+          )}
         </div>
 
         <div className="pt-6 border-t border-stone-100 dark:border-stone-800 flex items-center gap-6">
           <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
-            <Clock className="h-4 w-4" />
-            <span className="text-sm font-medium">Pendente:</span>
-            <span className="text-sm font-bold text-stone-900 dark:text-white">{wallet?.pending_balance.toLocaleString() || '0,00'} Kz</span>
-          </div>
-          <div className="h-4 w-px bg-stone-100 dark:bg-stone-800" />
-          <div className="flex items-center gap-1 text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">
-            <AlertCircle className="h-3 w-3" />
-            Liberação em 7 dias
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <span className="text-sm font-medium">Saques processados com segurança</span>
           </div>
         </div>
       </div>

@@ -108,19 +108,21 @@ export default function Checkout() {
 
       if (orderError) throw orderError;
 
-      // 2. Update Producer Wallet (Pending)
+      // 2. Update Producer Wallet (Available immediately)
       await supabase.rpc('process_sale_funds', {
         user_id_param: product.producer_id,
         amount_param: producerAmount,
-        description_param: `Venda do produto: ${product.name}`
+        description_param: `Venda do produto: ${product.name}`,
+        days_to_release: 0
       });
 
-      // 3. Update Affiliate Wallet (Pending)
+      // 3. Update Affiliate Wallet (Available immediately)
       if (ref && affiliateCommission > 0) {
         await supabase.rpc('process_sale_funds', {
           user_id_param: ref,
           amount_param: affiliateCommission,
-          description_param: `Comissão de afiliado: ${product.name}`
+          description_param: `Comissão de afiliado: ${product.name}`,
+          days_to_release: 0
         });
       }
 
