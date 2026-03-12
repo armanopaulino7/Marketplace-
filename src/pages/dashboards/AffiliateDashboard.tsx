@@ -17,21 +17,28 @@ import {
   Clock,
   Package,
   AlertCircle,
-  Camera
+  Camera,
+  Search,
+  ArrowRight
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function AffiliateDashboard() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [copied, setCopied] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [myAffiliations, setMyAffiliations] = useState<any[]>([]);
+  const [success, setSuccess] = useState<string | null>(null);
   const [stats, setStats] = useState({
     pendingCommission: 0,
     totalClicks: 0,
@@ -62,11 +69,41 @@ export default function AffiliateDashboard() {
 
   useEffect(() => {
     if (user) {
+      if (activeTab === 'home') {
+        fetchProducts();
+      }
       fetchAvailableProducts();
       fetchMyAffiliations();
       fetchStats();
     }
   }, [user, activeTab]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
+      const filtered = (data || []).filter(p => {
+        const lowerName = (p.name || '').toLowerCase();
+        const lowerDesc = (p.description || '').toLowerCase();
+        const lowerCat = (p.category || '').toLowerCase();
+        return !forbiddenTerms.some(term => lowerName.includes(term) || lowerDesc.includes(term) || lowerCat.includes(term));
+      });
+      
+      setProducts(filtered);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAvailableProducts = async () => {
     if (!user) return;
@@ -78,20 +115,53 @@ export default function AffiliateDashboard() {
         .select('*, profiles(email)')
         .eq('status', 'approved');
 
-      if (pError) throw pError;
+      if (pError) {
+        console.warn('Join with profiles failed in AffiliateDashboard, fetching without join:', pError);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('status', 'approved');
+        
+        if (fallbackError) throw fallbackError;
+        
+        const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
+        const filteredFallback = (fallbackData || []).filter(p => {
+          const lowerName = (p.name || '').toLowerCase();
+          const lowerDesc = (p.description || '').toLowerCase();
+          const lowerCat = (p.category || '').toLowerCase();
+          return !forbiddenTerms.some(term => lowerName.includes(term) || lowerDesc.includes(term) || lowerCat.includes(term));
+        });
 
-      // Get user's current affiliations
-      const { data: affiliations, error: aError } = await supabase
-        .from('affiliations')
-        .select('product_id')
-        .eq('affiliate_id', user.id);
+        // Get user's current affiliations
+        const { data: affiliations, error: aError } = await supabase
+          .from('affiliations')
+          .select('product_id')
+          .eq('affiliate_id', user.id);
 
-      if (aError) throw aError;
+        if (aError) throw aError;
 
-      const affiliatedIds = new Set(affiliations?.map(a => a.product_id));
-      
-      // Filter products the user is NOT affiliated with
-      setAvailableProducts(products?.filter(p => !affiliatedIds.has(p.id)) || []);
+        const affiliatedIds = new Set(affiliations?.map(a => a.product_id));
+        setAvailableProducts(filteredFallback.filter(p => !affiliatedIds.has(p.id)));
+      } else {
+        const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
+        const filteredProducts = (products || []).filter(p => {
+          const lowerName = (p.name || '').toLowerCase();
+          const lowerDesc = (p.description || '').toLowerCase();
+          const lowerCat = (p.category || '').toLowerCase();
+          return !forbiddenTerms.some(term => lowerName.includes(term) || lowerDesc.includes(term) || lowerCat.includes(term));
+        });
+
+        // Get user's current affiliations
+        const { data: affiliations, error: aError } = await supabase
+          .from('affiliations')
+          .select('product_id')
+          .eq('affiliate_id', user.id);
+
+        if (aError) throw aError;
+
+        const affiliatedIds = new Set(affiliations?.map(a => a.product_id));
+        setAvailableProducts(filteredProducts.filter(p => !affiliatedIds.has(p.id)));
+      }
     } catch (err) {
       console.error('Error fetching available products:', err);
     } finally {
@@ -120,6 +190,8 @@ export default function AffiliateDashboard() {
 
   const handleAffiliateRequest = async (productId: string) => {
     if (!user) return;
+    setLoading(true);
+    setSuccess(null);
     try {
       const { error } = await supabase
         .from('affiliations')
@@ -131,13 +203,22 @@ export default function AffiliateDashboard() {
 
       if (error) throw error;
       
+      setSuccess('Afiliação realizada com sucesso!');
       // Refresh lists
-      fetchAvailableProducts();
-      fetchMyAffiliations();
-      setActiveTab('sou-afiliado');
-    } catch (err) {
+      await Promise.all([
+        fetchAvailableProducts(),
+        fetchMyAffiliations()
+      ]);
+      
+      setTimeout(() => {
+        setActiveTab('sou-afiliado');
+        setSuccess(null);
+      }, 2000);
+    } catch (err: any) {
       console.error('Error requesting affiliation:', err);
-      alert('Erro ao solicitar afiliação.');
+      alert(err.message || 'Erro ao solicitar afiliação.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -204,7 +285,7 @@ export default function AffiliateDashboard() {
                     <h3 className="font-bold text-stone-900 dark:text-white text-lg mb-1 line-clamp-1">{product.name}</h3>
                     <p className="text-sm text-stone-500 dark:text-stone-400 mb-6 line-clamp-2">{product.description}</p>
                     <button 
-                      onClick={() => setActiveTab('afiliar-me')}
+                      onClick={() => navigate(`/product/${product.id}`)}
                       className="w-full py-3 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-2xl font-bold group-hover:bg-indigo-600 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center gap-2"
                     >
                       Ver Detalhes do Produto
@@ -251,6 +332,13 @@ export default function AffiliateDashboard() {
               </button>
             </div>
 
+            {success && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-2xl flex items-center gap-3 text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-top-4">
+                <CheckCircle2 className="h-5 w-5" />
+                <p className="font-bold">{success}</p>
+              </div>
+            )}
+
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-4 border-indigo-100 dark:border-stone-800 border-t-indigo-600 rounded-full animate-spin" />
@@ -265,7 +353,10 @@ export default function AffiliateDashboard() {
               <div className="grid grid-cols-1 gap-4">
                 {availableProducts.map((product) => (
                   <div key={product.id} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
-                    <div className="h-24 w-24 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center overflow-hidden">
+                    <div 
+                      className="h-24 w-24 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer"
+                      onClick={() => navigate(`/product/${product.id}`)}
+                    >
                       {product.imagens?.[0] ? (
                         <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -273,7 +364,12 @@ export default function AffiliateDashboard() {
                       )}
                     </div>
                     <div className="flex-1 text-center sm:text-left">
-                      <h3 className="font-bold text-stone-900 dark:text-white text-lg">{product.name}</h3>
+                      <h3 
+                        className="font-bold text-stone-900 dark:text-white text-lg cursor-pointer hover:text-indigo-600 transition-colors"
+                        onClick={() => navigate(`/product/${product.id}`)}
+                      >
+                        {product.name}
+                      </h3>
                       <p className="text-sm text-stone-500 dark:text-stone-400 mb-2">Produtor: {product.profiles?.email} • Preço: {product.price.toLocaleString()} Kz</p>
                       <div className="flex items-center justify-center sm:justify-start gap-4">
                         <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Comissão: {product.commission_rate}%</div>
@@ -282,10 +378,11 @@ export default function AffiliateDashboard() {
                     </div>
                     <button 
                       onClick={() => handleAffiliateRequest(product.id)}
-                      className="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                      disabled={loading}
+                      className="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <UserPlus className="h-5 w-5" />
-                      Afiliar-se Agora
+                      {loading ? 'Processando...' : 'Afiliar-se Agora'}
                     </button>
                   </div>
                 ))}

@@ -16,16 +16,22 @@ import {
   X,
   AlertCircle,
   CheckCircle2,
-  Camera
+  Camera,
+  Search,
+  ArrowRight
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function ProducerDashboard() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [products, setProducts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,16 +62,58 @@ export default function ProducerDashboard() {
     totalRevenue: 0,
     affiliates: 0
   });
+
+  const categoriesMap: Record<string, string[]> = {
+    'Moda': ['Roupas', 'Calçados', 'Acessórios', 'Relógios', 'Malas e Mochilas'],
+    'Eletrônicos': ['Celulares', 'Informática', 'Áudio e Vídeo', 'Games', 'Câmeras'],
+    'Beleza': ['Maquiagem', 'Perfumaria', 'Cuidados com a Pele', 'Cabelos', 'Higiene Pessoal'],
+    'Saúde': ['Suplementos', 'Bem-estar', 'Equipamentos Médicos', 'Vitaminas'],
+    'Casa e Cozinha': ['Decoração', 'Utensílios', 'Móveis', 'Cama, Mesa e Banho', 'Eletrodomésticos'],
+    'Esportes': ['Fitness', 'Ciclismo', 'Camping', 'Suplementos Esportivos', 'Vestuário Esportivo'],
+    'Brinquedos': ['Educativos', 'Jogos', 'Bonecas', 'Carrinhos', 'Ar Livre'],
+    'Livros': ['Literatura', 'Didáticos', 'Autoajuda', 'Infantil', 'Técnicos'],
+    'Outros': ['Artesanato', 'Papelaria', 'Pet Shop', 'Ferramentas']
+  };
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
+      if (activeTab === 'home') {
+        fetchProducts();
+      }
       fetchStats();
       fetchRecentSales();
       fetchTopProducts();
     }
   }, [user, activeTab]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
+      const filtered = (data || []).filter(p => {
+        const lowerName = (p.name || '').toLowerCase();
+        const lowerDesc = (p.description || '').toLowerCase();
+        const lowerCat = (p.category || '').toLowerCase();
+        return !forbiddenTerms.some(term => lowerName.includes(term) || lowerDesc.includes(term) || lowerCat.includes(term));
+      });
+      
+      setProducts(filtered);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchStats = async () => {
     if (!user) return;
@@ -188,6 +236,16 @@ export default function ProducerDashboard() {
 
     if (!formData.phone1) {
       setError('Pelo menos um número de telefone é obrigatório.');
+      return;
+    }
+
+    const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
+    const lowerName = formData.name.toLowerCase();
+    const lowerDesc = formData.description.toLowerCase();
+    const lowerCat = formData.category.toLowerCase();
+
+    if (forbiddenTerms.some(term => lowerName.includes(term) || lowerDesc.includes(term) || lowerCat.includes(term))) {
+      setError('Desculpe, a venda de veículos (carros) e imóveis (casas, terrenos) não é permitida nesta plataforma.');
       return;
     }
 
@@ -333,14 +391,92 @@ export default function ProducerDashboard() {
           </div>
         );
       case 'home':
+        const filteredProducts = products.filter(p => 
+          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
         return (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Home</h1>
-            <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
-              <HomeIcon className="h-16 w-16 text-stone-200 dark:text-stone-800 mx-auto" />
-              <h2 className="text-xl font-bold text-stone-900 dark:text-white">Vitrine do Produtor</h2>
-              <p className="text-stone-500 dark:text-stone-400 max-w-md mx-auto">Visualize como seus produtos aparecem para os clientes no marketplace.</p>
-              <button className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all">Ver Minha Loja</button>
+            <div className="bg-white dark:bg-stone-900 p-8 sm:p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-6">
+              <div className="max-w-md mx-auto relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" />
+                <input 
+                  type="text" 
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Pesquisar produtos no marketplace..." 
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {['Design', 'Marketing', 'Programação', 'Negócios'].map((cat, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => setSearchTerm(cat)}
+                    className="p-4 bg-stone-50 dark:bg-stone-800 rounded-2xl border border-stone-100 dark:border-stone-700 hover:border-indigo-200 transition-all cursor-pointer font-bold text-stone-900 dark:text-white text-sm"
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">Produtos no Marketplace</h2>
+                  {loading && <div className="h-5 w-5 border-2 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />}
+                </div>
+
+                {filteredProducts.length === 0 ? (
+                  <div className="py-12 text-center space-y-4">
+                    <Package className="h-12 w-12 text-stone-100 dark:text-stone-800 mx-auto" />
+                    <p className="text-stone-500 dark:text-stone-400">Nenhum produto encontrado.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProducts.map((product) => (
+                      <div 
+                        key={product.id} 
+                        onClick={() => navigate(`/product/${product.id}`)}
+                        className="bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all text-left group cursor-pointer"
+                      >
+                        <div className="h-48 bg-stone-200 dark:bg-stone-800 relative">
+                          {product.imagens?.[0] ? (
+                            <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-stone-400">
+                              <Package className="h-12 w-12" />
+                            </div>
+                          )}
+                          <div className="absolute top-3 right-3 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-black text-indigo-600 shadow-sm">
+                            {product.price.toLocaleString()} Kz
+                          </div>
+                          <div className="absolute bottom-3 left-3">
+                            <span className="px-2 py-1 bg-stone-900/60 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                              {product.category}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-5">
+                          <h3 className="font-bold text-stone-900 dark:text-white mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">{product.name}</h3>
+                          <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2 mb-4 h-8">{product.description}</p>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/product/${product.id}`);
+                            }}
+                            className="w-full py-3 bg-stone-900 dark:bg-stone-800 text-white rounded-2xl font-bold text-xs hover:bg-stone-800 dark:hover:bg-stone-700 transition-all flex items-center justify-center gap-2"
+                          >
+                            Ver Detalhes
+                            <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -397,30 +533,38 @@ export default function ProducerDashboard() {
                       ></textarea>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Categoria *</label>
-                        <input 
-                          required
-                          type="text"
-                          value={formData.category}
-                          onChange={e => setFormData({...formData, category: e.target.value})}
-                          placeholder="Ex: Moda"
-                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Categoria *</label>
+                          <select 
+                            required
+                            value={formData.category}
+                            onChange={e => setFormData({...formData, category: e.target.value, subcategory: ''})}
+                            className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          >
+                            <option value="">Selecione uma categoria</option>
+                            {Object.keys(categoriesMap).map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1 italic">Proibido: Carros, Casas e Terrenos.</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Subcategoria *</label>
+                          <select 
+                            required
+                            disabled={!formData.category}
+                            value={formData.subcategory}
+                            onChange={e => setFormData({...formData, subcategory: e.target.value})}
+                            className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all disabled:opacity-50"
+                          >
+                            <option value="">Selecione uma subcategoria</option>
+                            {formData.category && categoriesMap[formData.category]?.map(sub => (
+                              <option key={sub} value={sub}>{sub}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Subcategoria *</label>
-                        <input 
-                          required
-                          type="text"
-                          value={formData.subcategory}
-                          onChange={e => setFormData({...formData, subcategory: e.target.value})}
-                          placeholder="Ex: Camisetas"
-                          className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
 
                     <div>
                       <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Endereço de Recolha (Pickup) *</label>

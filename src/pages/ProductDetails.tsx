@@ -26,14 +26,26 @@ export default function ProductDetails() {
 
   const fetchProduct = async () => {
     try {
-      const { data, error } = await supabase
+      // Try with join first
+      const { data, error: fetchError } = await supabase
         .from('produtos')
         .select('*, profiles(email)')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
-      setProduct(data);
+      if (fetchError) {
+        console.warn('Join with profiles failed, fetching without join:', fetchError);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (fallbackError) throw fallbackError;
+        setProduct(fallbackData);
+      } else {
+        setProduct(data);
+      }
     } catch (err) {
       console.error('Error fetching product:', err);
     } finally {

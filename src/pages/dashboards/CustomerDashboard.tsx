@@ -88,7 +88,16 @@ export default function CustomerDashboard() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      
+      const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
+      const filtered = (data || []).filter(p => {
+        const lowerName = (p.name || '').toLowerCase();
+        const lowerDesc = (p.description || '').toLowerCase();
+        const lowerCat = (p.category || '').toLowerCase();
+        return !forbiddenTerms.some(term => lowerName.includes(term) || lowerDesc.includes(term) || lowerCat.includes(term));
+      });
+      
+      setProducts(filtered);
     } catch (err) {
       console.error('Error fetching products:', err);
     } finally {
@@ -168,7 +177,13 @@ export default function CustomerDashboard() {
                             <p className="text-sm text-stone-500 line-clamp-2">{order.produtos?.description}</p>
                           </div>
                           <div className="mt-4 flex items-center gap-2">
-                            <button className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/product/${order.product_id}`);
+                              }}
+                              className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
+                            >
                               Acessar Produto
                             </button>
                           </div>
