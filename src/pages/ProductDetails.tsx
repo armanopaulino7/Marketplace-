@@ -74,11 +74,11 @@ export default function ProductDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <button 
           onClick={() => navigate(-1)}
-          className="mb-8 flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors font-bold"
+          className="mb-8 flex items-center gap-2 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors font-bold"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para o Marketplace
@@ -87,18 +87,18 @@ export default function ProductDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Images */}
           <div className="space-y-4">
-            <div className="aspect-square bg-white rounded-[2.5rem] border border-stone-200 overflow-hidden shadow-sm">
+            <div className="aspect-square bg-white dark:bg-stone-900 rounded-[2.5rem] border border-stone-200 dark:border-stone-800 overflow-hidden shadow-sm">
               {product.imagens?.[0] ? (
                 <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-stone-300">
+                <div className="w-full h-full flex items-center justify-center text-stone-300 dark:text-stone-700">
                   <Package className="h-24 w-24" />
                 </div>
               )}
             </div>
             <div className="grid grid-cols-4 gap-4">
               {product.imagens?.slice(1, 5).map((img: string, i: number) => (
-                <div key={i} className="aspect-square bg-white rounded-2xl border border-stone-200 overflow-hidden cursor-pointer hover:border-indigo-500 transition-all">
+                <div key={i} className="aspect-square bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden cursor-pointer hover:border-indigo-500 transition-all">
                   <img src={img} alt={`${product.name} ${i+2}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
               ))}
@@ -109,60 +109,60 @@ export default function ProductDetails() {
           <div className="space-y-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full uppercase tracking-widest">
+                <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full uppercase tracking-widest">
                   {product.category}
                 </span>
-                <span className="px-3 py-1 bg-stone-100 text-stone-500 text-xs font-bold rounded-full uppercase tracking-widest">
+                <span className="px-3 py-1 bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 text-xs font-bold rounded-full uppercase tracking-widest">
                   {product.subcategory}
                 </span>
               </div>
-              <h1 className="text-4xl font-black text-stone-900 mb-2 leading-tight">{product.name}</h1>
+              <h1 className="text-4xl font-black text-stone-900 dark:text-white mb-2 leading-tight">{product.name}</h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 text-amber-400">
                   {[1, 2, 3, 4, 5].map(s => <Star key={s} className="h-4 w-4 fill-current" />)}
-                  <span className="text-sm text-stone-400 font-bold ml-1">(4.9 • 128 avaliações)</span>
+                  <span className="text-sm text-stone-400 dark:text-stone-500 font-bold ml-1">(4.9 • 128 avaliações)</span>
                 </div>
-                <div className="h-4 w-px bg-stone-200" />
-                <div className="text-sm text-stone-500">Vendido por <span className="font-bold text-stone-900">{product.profiles?.email}</span></div>
+                <div className="h-4 w-px bg-stone-200 dark:bg-stone-800" />
+                <div className="text-sm text-stone-500 dark:text-stone-400">Vendido por <span className="font-bold text-stone-900 dark:text-white">{product.profiles?.email}</span></div>
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-[2rem] border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-stone-900">{product.price.toLocaleString()} Kz</span>
-                <span className="text-stone-400 text-sm line-through">{(product.price * 1.2).toLocaleString()} Kz</span>
+                <span className="text-4xl font-black text-stone-900 dark:text-white">{product.price.toLocaleString()} Kz</span>
+                <span className="text-stone-400 dark:text-stone-600 text-sm line-through">{(product.price * 1.2).toLocaleString()} Kz</span>
               </div>
 
               <div className="space-y-4">
                 <button 
                   onClick={() => navigate(`/checkout/${product.id}${ref ? `?ref=${ref}` : ''}`)}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-3"
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3"
                 >
                   <ShoppingBag className="h-6 w-6" />
                   Comprar Agora
                 </button>
-                <p className="text-center text-xs text-stone-400">Pagamento 100% seguro e processamento imediato.</p>
+                <p className="text-center text-xs text-stone-400 dark:text-stone-500">Pagamento 100% seguro e processamento imediato.</p>
               </div>
 
-              <div className="pt-6 border-t border-stone-100 grid grid-cols-2 gap-4">
+              <div className="pt-6 border-t border-stone-100 dark:border-stone-800 grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
+                  <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-emerald-600 dark:text-emerald-400">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
-                  <div className="text-[10px] font-bold text-stone-600 uppercase tracking-wider">Garantia de 7 dias</div>
+                  <div className="text-[10px] font-bold text-stone-600 dark:text-stone-400 uppercase tracking-wider">Garantia de 7 dias</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
                     <Truck className="h-5 w-5" />
                   </div>
-                  <div className="text-[10px] font-bold text-stone-600 uppercase tracking-wider">Acesso Imediato</div>
+                  <div className="text-[10px] font-bold text-stone-600 dark:text-stone-400 uppercase tracking-wider">Acesso Imediato</div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-stone-900">Sobre o Produto</h2>
-              <p className="text-stone-600 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white">Sobre o Produto</h2>
+              <p className="text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-wrap text-base">{product.description}</p>
             </div>
 
             {product.variations && (
@@ -170,10 +170,10 @@ export default function ProductDetails() {
                 {Object.entries(product.variations).map(([key, values]: [string, any]) => (
                   values && values.length > 0 && (
                     <div key={key} className="space-y-3">
-                      <h3 className="text-sm font-bold text-stone-900 uppercase tracking-widest">{key}</h3>
+                      <h3 className="text-sm font-bold text-stone-900 dark:text-white uppercase tracking-widest">{key}</h3>
                       <div className="flex flex-wrap gap-2">
                         {values.map((v: string, i: number) => (
-                          <button key={i} className="px-4 py-2 border border-stone-200 rounded-xl text-sm font-bold text-stone-600 hover:border-indigo-500 hover:text-indigo-600 transition-all">
+                          <button key={i} className="px-4 py-2 border border-stone-200 dark:border-stone-800 rounded-xl text-sm font-bold text-stone-600 dark:text-stone-400 hover:border-indigo-500 hover:text-indigo-600 transition-all">
                             {v}
                           </button>
                         ))}

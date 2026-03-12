@@ -48,9 +48,11 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
 
   const getMenuItems = (): MenuItem[] => {
     switch (profile?.role) {
+      case 'admin':
       case 'adm':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
           { id: 'home', label: 'Home', icon: Home },
           { id: 'financeiro', label: 'Aprovar Solicitação de Saque', icon: Wallet },
           { id: 'aprovacao-produtos', label: 'Aprovação de Produtos', icon: CheckSquare },
@@ -58,24 +60,29 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'taxas-entrega', label: 'Taxas de Entrega', icon: Truck },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
+      case 'producer':
       case 'produtor':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
           { id: 'cadastrar-produto', label: 'Cadastrar Produto', icon: PlusCircle },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
+          { id: 'afiliados', label: 'Afiliados', icon: Users },
           { id: 'carteira', label: 'Carteira', icon: Wallet },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
+      case 'affiliate':
       case 'afiliado':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
           { id: 'afiliar-me', label: 'Afiliar-me', icon: UserPlus },
           { id: 'sou-afiliado', label: 'Sou Afiliado', icon: LinkIcon },
+          { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
           { id: 'carteira', label: 'Carteira', icon: Wallet },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
+      case 'customer':
       case 'cliente':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },

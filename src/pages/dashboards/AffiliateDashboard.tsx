@@ -39,6 +39,7 @@ export default function AffiliateDashboard() {
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [myAffiliations, setMyAffiliations] = useState<any[]>([]);
   const [success, setSuccess] = useState<string | null>(null);
+  const [orders, setOrders] = useState<any[]>([]);
   const [stats, setStats] = useState({
     pendingCommission: 0,
     totalClicks: 0,
@@ -75,8 +76,25 @@ export default function AffiliateDashboard() {
       fetchAvailableProducts();
       fetchMyAffiliations();
       fetchStats();
+      fetchOrders();
     }
   }, [user, activeTab]);
+
+  const fetchOrders = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, produtos(name, imagens)')
+        .eq('affiliate_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (err) {
+      console.error('Error fetching affiliate orders:', err);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -173,16 +191,43 @@ export default function AffiliateDashboard() {
     if (!user) return;
     setLoading(true);
     try {
+      // Fetch affiliations with products
       const { data, error } = await supabase
         .from('affiliations')
-        .select('*, produtos(*, profiles(email))')
+        .select('*, produtos(*)')
         .eq('affiliate_id', user.id)
         .eq('status', 'approved');
 
       if (error) throw error;
+      
+      // If we need producer email, we can fetch it separately or just use what we have
       setMyAffiliations(data || []);
     } catch (err) {
       console.error('Error fetching my affiliations:', err);
+      // Fallback: fetch without join if needed
+      try {
+        const { data: affs } = await supabase
+          .from('affiliations')
+          .select('*')
+          .eq('affiliate_id', user.id)
+          .eq('status', 'approved');
+        
+        if (affs && affs.length > 0) {
+          const productIds = affs.map(a => a.product_id);
+          const { data: prods } = await supabase
+            .from('produtos')
+            .select('*')
+            .in('id', productIds);
+          
+          const combined = affs.map(a => ({
+            ...a,
+            produtos: prods?.find(p => p.id === a.product_id)
+          }));
+          setMyAffiliations(combined);
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback failed:', fallbackErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -488,6 +533,67 @@ export default function AffiliateDashboard() {
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Sua Carteira</h1>
             <WalletCard />
+          </div>
+        );
+      case 'pedidos':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Suas Indicações</h1>
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800">
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Produto</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Valor</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Comissão</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Data</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/20 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden flex-shrink-0">
+                              {order.produtos?.imagens?.[0] ? (
+                                <img src={order.produtos.imagens[0]} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Package className="h-5 w-5 m-2.5 text-stone-300" />
+                              )}
+                            </div>
+                            <span className="font-bold text-stone-900 dark:text-white text-sm">{order.produtos?.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-stone-600 dark:text-stone-400">{order.amount.toLocaleString()} Kz</td>
+                        <td className="px-6 py-4 text-sm font-bold text-emerald-600 dark:text-emerald-400">{order.commission_amount.toLocaleString()} Kz</td>
+                        <td className="px-6 py-4">
+                          <span className={cn(
+                            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                            order.status === 'completed' ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                            order.status === 'cancelled' ? "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400" :
+                            "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+                          )}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-stone-500 dark:text-stone-400">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                    {orders.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-stone-400 dark:text-stone-500">
+                          Nenhuma indicação realizada ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         );
       case 'perfil':

@@ -158,7 +158,7 @@ export default function Checkout() {
       const { data: adminUser } = await supabase
         .from('profiles')
         .select('id')
-        .eq('role', 'adm')
+        .eq('role', 'admin')
         .limit(1)
         .single();
 
@@ -173,9 +173,15 @@ export default function Checkout() {
       }
 
       setSuccess(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error processing purchase:', err);
-      alert('Erro ao processar compra. Verifique sua conexão.');
+      if (err.message?.includes('column "delivery_date" of relation "orders" does not exist')) {
+        alert('Erro: A coluna "delivery_date" não existe no banco de dados. Por favor, execute o código SQL que enviei no seu painel do Supabase.');
+      } else if (err.message?.includes('function process_sale_funds')) {
+        alert('Erro: A função "process_sale_funds" não foi encontrada. Por favor, execute o código SQL que enviei no seu painel do Supabase.');
+      } else {
+        alert('Erro ao processar compra: ' + (err.message || 'Verifique sua conexão.'));
+      }
     } finally {
       setProcessing(false);
     }

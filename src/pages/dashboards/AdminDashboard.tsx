@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [editingFee, setEditingFee] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
@@ -48,9 +49,12 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    if (user && profile?.role === 'adm') {
+    if (user && (profile?.role === 'admin' || profile?.role === 'adm')) {
       if (activeTab === 'home') {
         fetchProducts();
+      }
+      if (activeTab === 'pedidos') {
+        fetchOrders();
       }
       fetchStats();
       fetchPendingProducts();
@@ -59,6 +63,38 @@ export default function AdminDashboard() {
       fetchUsers();
     }
   }, [user, profile, activeTab]);
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, produtos(name, imagens)')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', orderId);
+
+      if (error) throw error;
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      alert('Erro ao atualizar status do pedido.');
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -453,6 +489,91 @@ export default function AdminDashboard() {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          </div>
+        );
+      case 'pedidos':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Gestão de Pedidos</h1>
+              <p className="text-stone-500 dark:text-stone-400">Gerencie todos os pedidos realizados no sistema.</p>
+            </div>
+
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800">
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Pedido / Cliente</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Produto</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Valor</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Pagamento</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/20 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-stone-900 dark:text-white">#{order.id.substring(0, 8)}</div>
+                          <div className="text-xs text-stone-500 dark:text-stone-400">{order.customer_name}</div>
+                          <div className="text-[10px] text-stone-400">{order.customer_phone}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden flex-shrink-0">
+                              {order.produtos?.imagens?.[0] ? (
+                                <img src={order.produtos.imagens[0]} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Package className="h-5 w-5 m-2.5 text-stone-300" />
+                              )}
+                            </div>
+                            <span className="font-bold text-stone-900 dark:text-white text-sm">{order.produtos?.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-stone-900 dark:text-white">{order.amount.toLocaleString()} Kz</div>
+                          <div className="text-[10px] text-stone-500">Entrega: {order.delivery_fee?.toLocaleString()} Kz</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-[10px] font-bold text-stone-600 dark:text-stone-400 uppercase">{order.payment_method}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={cn(
+                            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                            order.status === 'completed' ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                            order.status === 'cancelled' ? "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400" :
+                            "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+                          )}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <select 
+                            value={order.status}
+                            onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                            className="text-xs bg-stone-100 dark:bg-stone-800 border-none rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 outline-none"
+                          >
+                            <option value="pending">Pendente</option>
+                            <option value="processing">Em Processamento</option>
+                            <option value="completed">Concluído</option>
+                            <option value="cancelled">Cancelado</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                    {orders.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-stone-400 dark:text-stone-500">
+                          Nenhum pedido realizado ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

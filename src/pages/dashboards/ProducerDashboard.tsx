@@ -76,6 +76,7 @@ export default function ProducerDashboard() {
   };
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [affiliates, setAffiliates] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -85,8 +86,45 @@ export default function ProducerDashboard() {
       fetchStats();
       fetchRecentSales();
       fetchTopProducts();
+      fetchAffiliates();
     }
   }, [user, activeTab]);
+
+  const fetchAffiliates = async () => {
+    if (!user) return;
+    try {
+      const { data: myProducts } = await supabase
+        .from('produtos')
+        .select('id')
+        .eq('producer_id', user.id);
+      
+      if (!myProducts || myProducts.length === 0) return;
+
+      const productIds = myProducts.map(p => p.id);
+
+      const { data, error } = await supabase
+        .from('affiliations')
+        .select('*, profiles(email, full_name), produtos(name)')
+        .in('product_id', productIds)
+        .eq('status', 'approved');
+
+      if (error) {
+        console.warn('Join failed in fetchAffiliates, fetching without join:', error);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('affiliations')
+          .select('*, produtos(name)')
+          .in('product_id', productIds)
+          .eq('status', 'approved');
+        
+        if (fallbackError) throw fallbackError;
+        setAffiliates(fallbackData || []);
+      } else {
+        setAffiliates(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching affiliates:', err);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -118,40 +156,85 @@ export default function ProducerDashboard() {
   const fetchStats = async () => {
     if (!user) return;
     try {
-      const { count: activeCount } = await supabase
+      const { data: myProducts } = await supabase
         .from('produtos')
-        .select('*', { count: 'exact', head: true })
-        .eq('producer_id', user.id)
-        .eq('status', 'approved');
+        .select('id')
+        .eq('producer_id', user.id);
+      
+      const productIds = myProducts?.map(p => p.id) || [];
 
-      const { data: orders } = await supabase
+      const { data: salesData } = await supabase
         .from('orders')
-        .select('amount, commission_amount, delivery_fee')
-        .eq('producer_id', user.id)
-        .eq('status', 'completed');
-
-      const revenue = orders?.reduce((acc, order) => {
-        // Producer gets: amount - commission_amount - delivery_fee - 10% platform fee
-        const productPrice = order.amount - (order.delivery_fee || 0);
-        const platformFee = productPrice * 0.10;
-        return acc + (productPrice - (order.commission_amount || 0) - platformFee);
-      }, 0) || 0;
+        .select('amount')
+        .eq('status', 'completed') // Changed from 'paid' to 'completed' as per current status flow
+        .in('product_id', productIds);
+      
+      const totalSales = salesData?.reduce((sum, sale) => sum + sale.amount, 0) || 0;
 
       const { count: affiliateCount } = await supabase
         .from('affiliations')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'approved')
-        .in('product_id', (await supabase.from('produtos').select('id').eq('producer_id', user.id)).data?.map(p => p.id) || []);
+        .in('product_id', productIds);
 
       setStats({
-        activeProducts: activeCount || 0,
-        totalRevenue: revenue,
+        activeProducts: productIds.length,
+        totalRevenue: totalSales,
         affiliates: affiliateCount || 0
       });
     } catch (err) {
       console.error('Error fetching stats:', err);
     }
   };
+
+  const [pendingAffiliations, setPendingAffiliations] = useState<any[]>([]);
+
+  const fetchPendingAffiliations = async () => {
+    if (!user) return;
+    try {
+      const { data: myProducts } = await supabase
+        .from('produtos')
+        .select('id')
+        .eq('producer_id', user.id);
+      
+      const productIds = myProducts?.map(p => p.id) || [];
+      if (productIds.length === 0) return;
+
+      const { data, error } = await supabase
+        .from('affiliations')
+        .select('*, profiles(email), produtos(name)')
+        .eq('status', 'pending')
+        .in('product_id', productIds);
+
+      if (error) throw error;
+      setPendingAffiliations(data || []);
+    } catch (err) {
+      console.error('Error fetching pending affiliations:', err);
+    }
+  };
+
+  const handleAffiliationRequest = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('affiliations')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      fetchPendingAffiliations();
+      fetchAffiliates();
+      fetchStats();
+    } catch (err) {
+      console.error('Error updating affiliation:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user && activeTab === 'dashboard') {
+      fetchPendingAffiliations();
+    }
+  }, [user, activeTab]);
 
   const fetchRecentSales = async () => {
     if (!user) return;
@@ -373,11 +456,37 @@ export default function ProducerDashboard() {
 
               <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm p-6">
                 <h2 className="text-lg font-bold text-stone-900 dark:text-white mb-4">Solicitações de Afiliação</h2>
-                <div className="space-y-4 text-center py-12">
-                  <div className="bg-stone-50 dark:bg-stone-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-8 w-8 text-stone-300 dark:text-stone-600" />
-                  </div>
-                  <p className="text-stone-500 dark:text-stone-400 text-sm">Nenhuma solicitação pendente no momento.</p>
+                <div className="space-y-4">
+                  {pendingAffiliations.map((req) => (
+                    <div key={req.id} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-100 dark:border-stone-800">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-stone-900 dark:text-white truncate">{req.profiles?.email}</p>
+                        <p className="text-xs text-stone-500 dark:text-stone-400">Produto: <span className="font-bold">{req.produtos?.name}</span></p>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <button 
+                          onClick={() => handleAffiliationRequest(req.id, 'approved')}
+                          className="px-3 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-xl hover:bg-emerald-700 transition-colors"
+                        >
+                          Aprovar
+                        </button>
+                        <button 
+                          onClick={() => handleAffiliationRequest(req.id, 'rejected')}
+                          className="px-3 py-1.5 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-[10px] font-bold rounded-xl hover:bg-stone-300 dark:hover:bg-stone-600 transition-colors"
+                        >
+                          Recusar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {pendingAffiliations.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="bg-stone-50 dark:bg-stone-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="h-8 w-8 text-stone-300 dark:text-stone-600" />
+                      </div>
+                      <p className="text-stone-500 dark:text-stone-400 text-sm">Nenhuma solicitação pendente no momento.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -522,7 +631,7 @@ export default function ProducerDashboard() {
                         value={formData.description}
                         onChange={e => setFormData({...formData, description: e.target.value})}
                         placeholder="Descreva as características, benefícios e diferenciais do seu produto..." 
-                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all"
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all min-h-[150px] placeholder:text-stone-400"
                       ></textarea>
                     </div>
 
@@ -791,6 +900,56 @@ export default function ProducerDashboard() {
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Sua Carteira</h1>
             <WalletCard />
+          </div>
+        );
+      case 'afiliados':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seus Afiliados</h1>
+              <p className="text-stone-500 dark:text-stone-400">Pessoas que estão vendendo seus produtos.</p>
+            </div>
+
+            <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800">
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Afiliado</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Produto</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Comissão</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Data Afiliação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {affiliates.map((aff) => (
+                      <tr key={aff.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/20 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-stone-900 dark:text-white text-sm">{aff.profiles?.email || 'Afiliado'}</div>
+                          <div className="text-[10px] text-stone-400">{aff.affiliate_id.substring(0, 8)}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-stone-600 dark:text-stone-400">
+                          {aff.produtos?.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                          {aff.commission_rate}%
+                        </td>
+                        <td className="px-6 py-4 text-sm text-stone-500 dark:text-stone-400">
+                          {new Date(aff.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                    {affiliates.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-12 text-center text-stone-400 dark:text-stone-500">
+                          Você ainda não possui afiliados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         );
       case 'perfil':
