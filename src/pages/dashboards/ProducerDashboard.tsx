@@ -99,28 +99,53 @@ export default function ProducerDashboard() {
         .select('id')
         .eq('producer_id', user.id);
       
-      if (!myProducts || myProducts.length === 0) return;
+      if (!myProducts || myProducts.length === 0) {
+        setAffiliates([]);
+        return;
+      }
 
       const productIds = myProducts.map(p => p.id);
 
+      // Try with join first
       const { data, error } = await supabase
         .from('affiliations')
-        .select('*, profiles(email, full_name), produtos(name)')
+        .select('*, profiles!affiliate_id(email, full_name), produtos(name)')
         .in('product_id', productIds)
         .eq('status', 'approved');
 
       if (error) {
         console.warn('Join failed in fetchAffiliates, fetching without join:', error);
-        const { data: fallbackData, error: fallbackError } = await supabase
+        // Fallback: fetch affiliations and then fetch profiles manually
+        const { data: affs, error: affError } = await supabase
           .from('affiliations')
           .select('*, produtos(name)')
           .in('product_id', productIds)
           .eq('status', 'approved');
         
-        if (fallbackError) throw fallbackError;
-        setAffiliates(fallbackData || []);
+        if (affError) throw affError;
+        
+        if (affs && affs.length > 0) {
+          const affiliateIds = Array.from(new Set(affs.map(a => a.affiliate_id)));
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .in('id', affiliateIds);
+          
+          const combined = affs.map(a => ({
+            ...a,
+            profiles: profs?.find(p => p.id === a.affiliate_id)
+          }));
+          setAffiliates(combined);
+        } else {
+          setAffiliates([]);
+        }
       } else {
-        setAffiliates(data || []);
+        // Map profiles!affiliate_id to profiles for consistency if needed
+        const mappedData = data?.map(item => ({
+          ...item,
+          profiles: item.profiles || (item as any).profiles_affiliate_id
+        }));
+        setAffiliates(mappedData || []);
       }
     } catch (err) {
       console.error('Error fetching affiliates:', err);
@@ -199,16 +224,49 @@ export default function ProducerDashboard() {
         .eq('producer_id', user.id);
       
       const productIds = myProducts?.map(p => p.id) || [];
-      if (productIds.length === 0) return;
+      if (productIds.length === 0) {
+        setPendingAffiliations([]);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('affiliations')
-        .select('*, profiles(email), produtos(name)')
+        .select('*, profiles!affiliate_id(email), produtos(name)')
         .eq('status', 'pending')
         .in('product_id', productIds);
 
-      if (error) throw error;
-      setPendingAffiliations(data || []);
+      if (error) {
+        console.warn('Join failed in fetchPendingAffiliations, fetching without join:', error);
+        const { data: affs, error: affError } = await supabase
+          .from('affiliations')
+          .select('*, produtos(name)')
+          .eq('status', 'pending')
+          .in('product_id', productIds);
+        
+        if (affError) throw affError;
+
+        if (affs && affs.length > 0) {
+          const affiliateIds = Array.from(new Set(affs.map(a => a.affiliate_id)));
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .in('id', affiliateIds);
+          
+          const combined = affs.map(a => ({
+            ...a,
+            profiles: profs?.find(p => p.id === a.affiliate_id)
+          }));
+          setPendingAffiliations(combined);
+        } else {
+          setPendingAffiliations([]);
+        }
+      } else {
+        const mappedData = data?.map(item => ({
+          ...item,
+          profiles: item.profiles || (item as any).profiles_affiliate_id
+        }));
+        setPendingAffiliations(mappedData || []);
+      }
     } catch (err) {
       console.error('Error fetching pending affiliations:', err);
     }

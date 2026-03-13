@@ -15,13 +15,14 @@ import {
   UserPlus, 
   Link as LinkIcon,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { Sun, Moon } from 'lucide-react';
 
 interface MenuItem {
   id: string;
@@ -107,8 +108,14 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
         </div>
         <div className="flex items-center gap-2">
           <button 
-            onClick={toggleTheme}
-            className="p-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleTheme();
+            }}
+            className="p-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors relative z-50"
+            aria-label="Toggle theme"
           >
             {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
@@ -141,8 +148,14 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
               <span className="font-bold text-xl text-stone-900 dark:text-white">Marketplace</span>
             </div>
             <button 
-              onClick={toggleTheme}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleTheme();
+              }}
               className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
+              aria-label="Toggle theme"
             >
               {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </button>
