@@ -45,7 +45,7 @@ export default function Checkout() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'admin')
+        .or('role.eq.admin,role.eq.adm')
         .limit(1)
         .single();
       
@@ -167,6 +167,8 @@ export default function Checkout() {
           delivery_date: deliveryDate,
           payment_method: paymentMethod,
           commission_amount: affiliateCommission,
+          producer_commission: producerAmount,
+          platform_fee: platformFee,
           status: 'pending'
         })
         .select()
