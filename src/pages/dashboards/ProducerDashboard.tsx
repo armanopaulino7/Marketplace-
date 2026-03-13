@@ -21,6 +21,17 @@ import {
   ArrowRight,
   LogOut
 } from 'lucide-react';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart,
+  Bar
+} from 'recharts';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -63,6 +74,7 @@ export default function ProducerDashboard() {
     totalRevenue: 0,
     affiliates: 0
   });
+  const [salesHistory, setSalesHistory] = useState<any[]>([]);
 
   const categoriesMap: Record<string, string[]> = {
     'Moda': ['Roupas', 'Calçados', 'Acessórios', 'Relógios', 'Malas e Mochilas'],
@@ -208,6 +220,33 @@ export default function ProducerDashboard() {
         totalRevenue: totalSales,
         affiliates: affiliateCount || 0
       });
+
+      // Generate sales history for the last 7 days
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        return date.toISOString().split('T')[0];
+      }).reverse();
+
+      const { data: historyData } = await supabase
+        .from('orders')
+        .select('amount, created_at')
+        .eq('status', 'completed')
+        .in('product_id', productIds)
+        .gte('created_at', last7Days[0]);
+
+      const historyMap = (historyData || []).reduce((acc: any, order: any) => {
+        const date = order.created_at.split('T')[0];
+        acc[date] = (acc[date] || 0) + order.amount;
+        return acc;
+      }, {});
+
+      const chartData = last7Days.map(date => ({
+        date: new Date(date).toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' }),
+        vendas: historyMap[date] || 0
+      }));
+
+      setSalesHistory(chartData);
     } catch (err) {
       console.error('Error fetching stats:', err);
     }
@@ -462,6 +501,90 @@ export default function ProducerDashboard() {
             </div>
 
             <WalletCard hideWithdraw={true} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
+                <h3 className="text-lg font-bold text-stone-900 dark:text-white mb-6">Desempenho de Vendas (7 dias)</h3>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={salesHistory}>
+                      <defs>
+                        <linearGradient id="colorVendasProd" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#9ca3af', fontSize: 12 }}
+                        dy={10}
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#9ca3af', fontSize: 12 }}
+                        tickFormatter={(value) => `${value.toLocaleString()} Kz`}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1c1917', 
+                          border: 'none', 
+                          borderRadius: '12px',
+                          color: '#fff'
+                        }}
+                        itemStyle={{ color: '#818cf8' }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="vendas" 
+                        stroke="#4f46e5" 
+                        strokeWidth={3}
+                        fillOpacity={1} 
+                        fill="url(#colorVendasProd)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
+                <h3 className="text-lg font-bold text-stone-900 dark:text-white mb-6">Top Produtos (Vendas)</h3>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topProducts.slice(0, 5).map(p => ({
+                      name: p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name,
+                      total: p.price // Using price as a proxy if sales_count isn't available
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#9ca3af', fontSize: 12 }}
+                        dy={10}
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#9ca3af', fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1c1917', 
+                          border: 'none', 
+                          borderRadius: '12px',
+                          color: '#fff'
+                        }}
+                      />
+                      <Bar dataKey="total" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
