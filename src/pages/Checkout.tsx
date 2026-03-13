@@ -32,10 +32,48 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState('IBAN');
   const ref = searchParams.get('ref');
 
+  const [adminProfile, setAdminProfile] = useState<any>(null);
+
   useEffect(() => {
     fetchProduct();
     fetchDeliveryFees();
+    fetchAdminProfile();
   }, [id]);
+
+  const fetchAdminProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'admin')
+        .limit(1)
+        .single();
+      
+      if (error) throw error;
+      setAdminProfile(data);
+    } catch (err) {
+      console.error('Error fetching admin profile:', err);
+    }
+  };
+
+  const getPaymentDetail = () => {
+    if (!adminProfile) return 'Carregando dados de pagamento...';
+    
+    switch (paymentMethod) {
+      case 'IBAN':
+        return adminProfile.iban_platform || 'IBAN não configurado pela plataforma.';
+      case 'PayPay':
+        return adminProfile.paypay_platform || 'Número PayPay não configurado pela plataforma.';
+      case 'Multicaixa Express':
+        return adminProfile.express_platform || 'Número Multicaixa Express não configurado pela plataforma.';
+      case 'Unitel Money':
+        return adminProfile.unitel_platform || 'Número Unitel Money não configurado pela plataforma.';
+      case 'AfriMoney':
+        return adminProfile.afri_platform || 'Número AfriMoney não configurado pela plataforma.';
+      default:
+        return '';
+    }
+  };
 
   const fetchDeliveryFees = async () => {
     try {
@@ -333,10 +371,17 @@ export default function Checkout() {
                 </div>
 
                 {paymentMethod !== 'Pagamento na entrega' && (
-                  <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-2xl border border-stone-100 dark:border-stone-700">
-                    <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-                      Após clicar em finalizar, você receberá os dados para pagamento via <strong>{paymentMethod}</strong>. 
-                      Sua compra será confirmada assim que o pagamento for validado.
+                  <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 space-y-3">
+                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm uppercase tracking-wider">
+                      <CreditCard className="h-4 w-4" />
+                      Dados para Pagamento ({paymentMethod})
+                    </div>
+                    <div className="p-4 bg-white dark:bg-stone-800 rounded-xl border border-indigo-100 dark:border-stone-700 font-mono text-stone-900 dark:text-white break-all text-center text-lg font-black">
+                      {getPaymentDetail()}
+                    </div>
+                    <p className="text-[10px] text-stone-500 dark:text-stone-400 leading-relaxed text-center">
+                      Após clicar em finalizar, realize o pagamento para os dados acima. 
+                      Sua compra será confirmada assim que o pagamento for validado pela equipe <strong>CashLuanda</strong>.
                     </p>
                   </div>
                 )}

@@ -19,36 +19,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Session error:', error.message);
-        // If session is invalid or refresh token not found, clear everything
-        if (
-          error.message.includes('Refresh Token Not Found') || 
-          error.message.includes('invalid_refresh_token') ||
-          error.message.includes('Refresh Token is invalid')
-        ) {
-          // Aggressively clear all localStorage items that might be related to supabase auth
-          Object.keys(localStorage).forEach(key => {
-            if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
-              localStorage.removeItem(key);
-            }
-          });
-          supabase.auth.signOut();
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error.message);
+          
+          // If session is invalid or refresh token not found, clear everything
+          if (
+            error.message.includes('Refresh Token Not Found') || 
+            error.message.includes('invalid_refresh_token') ||
+            error.message.includes('Refresh Token is invalid') ||
+            error.message.includes('session_not_found')
+          ) {
+            await handleAuthError();
+          } else {
+            setLoading(false);
+          }
+          return;
         }
-        setUser(null);
-        setProfile(null);
+        
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Unexpected auth error:', err);
         setLoading(false);
-        return;
+      }
+    };
+
+    const handleAuthError = async () => {
+      // Aggressively clear all localStorage items that might be related to supabase auth
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        // Ignore sign out errors
       }
       
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+    };
+
+    checkSession();
 
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -56,13 +79,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setProfile(null);
         setLoading(false);
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
       } else if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
       } else {
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
+        // Handle cases where session might be null but event isn't SIGNED_OUT
+        if (event === 'INITIAL_SESSION' && !session) {
+           setLoading(false);
+        } else if (event === 'USER_UPDATED' && !session) {
+           setUser(null);
+           setProfile(null);
+           setLoading(false);
+        }
       }
     });
 

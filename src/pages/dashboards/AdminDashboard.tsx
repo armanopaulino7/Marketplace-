@@ -50,6 +50,50 @@ export default function AdminDashboard() {
     pendingProducts: 0
   });
 
+  const [bankDetails, setBankDetails] = useState({
+    iban_platform: '',
+    paypay_platform: '',
+    express_platform: '',
+    unitel_platform: '',
+    afri_platform: '',
+    iban_private: '',
+    bank_name_private: '',
+    holder_name_private: ''
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setBankDetails({
+        iban_platform: profile.iban_platform || '',
+        paypay_platform: profile.paypay_platform || '',
+        express_platform: profile.express_platform || '',
+        unitel_platform: profile.unitel_platform || '',
+        afri_platform: profile.afri_platform || '',
+        iban_private: profile.iban_private || '',
+        bank_name_private: profile.bank_name_private || '',
+        holder_name_private: profile.holder_name_private || ''
+      });
+    }
+  }, [profile]);
+
+  const handleUpdateBankDetails = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(bankDetails)
+        .eq('id', user.id);
+
+      if (error) throw error;
+      alert('Dados bancários atualizados com sucesso!');
+    } catch (err: any) {
+      console.error('Error updating bank details:', err);
+      alert('Erro ao atualizar dados bancários: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user && (profile?.role === 'admin' || profile?.role === 'adm')) {
       if (activeTab === 'home') {
@@ -1032,11 +1076,11 @@ export default function AdminDashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button 
-                  onClick={() => alert('Funcionalidade de configurações em breve!')}
+                  onClick={() => setActiveTab('dados_bancarios')}
                   className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
                 >
-                  <Settings className="h-5 w-5" />
-                  Configurações
+                  <Wallet className="h-5 w-5" />
+                  Dados Bancários
                 </button>
                 <button 
                   onClick={() => alert('Funcionalidade de edição de dados em breve!')}
@@ -1045,6 +1089,136 @@ export default function AdminDashboard() {
                   <UserIcon className="h-5 w-5" />
                   Editar Dados
                 </button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'dados_bancarios':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setActiveTab('perfil')}
+                className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-all"
+              >
+                <ArrowRight className="h-5 w-5 rotate-180" />
+              </button>
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Dados Bancários</h1>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Platform Data */}
+              <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Shield className="h-6 w-6 text-indigo-600" />
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">Dados da Plataforma (Público)</h2>
+                </div>
+                <p className="text-sm text-stone-500 dark:text-stone-400">Estes dados serão exibidos aos clientes no momento do checkout.</p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">IBAN da Plataforma</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.iban_platform}
+                      onChange={(e) => setBankDetails({...bankDetails, iban_platform: e.target.value})}
+                      placeholder="AO06..." 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Número PayPay</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.paypay_platform}
+                      onChange={(e) => setBankDetails({...bankDetails, paypay_platform: e.target.value})}
+                      placeholder="9xx..." 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Multicaixa Express</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.express_platform}
+                      onChange={(e) => setBankDetails({...bankDetails, express_platform: e.target.value})}
+                      placeholder="9xx..." 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Unitel Money</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.unitel_platform}
+                      onChange={(e) => setBankDetails({...bankDetails, unitel_platform: e.target.value})}
+                      placeholder="9xx..." 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">AfriMoney</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.afri_platform}
+                      onChange={(e) => setBankDetails({...bankDetails, afri_platform: e.target.value})}
+                      placeholder="9xx..." 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Private Data */}
+              <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <UserIcon className="h-6 w-6 text-indigo-600" />
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">Seus Dados Particulares (Privado)</h2>
+                </div>
+                <p className="text-sm text-stone-500 dark:text-stone-400">Estes dados são apenas para controle interno da administração.</p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Nome do Banco</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.bank_name_private}
+                      onChange={(e) => setBankDetails({...bankDetails, bank_name_private: e.target.value})}
+                      placeholder="Ex: BAI, BFA..." 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Titular da Conta</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.holder_name_private}
+                      onChange={(e) => setBankDetails({...bankDetails, holder_name_private: e.target.value})}
+                      placeholder="Nome do titular" 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">IBAN Particular</label>
+                    <input 
+                      type="text" 
+                      value={bankDetails.iban_private}
+                      onChange={(e) => setBankDetails({...bankDetails, iban_private: e.target.value})}
+                      placeholder="AO06..." 
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-6">
+                  <button 
+                    onClick={handleUpdateBankDetails}
+                    disabled={loading}
+                    className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {loading ? 'Salvando...' : 'Salvar Todos os Dados'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
