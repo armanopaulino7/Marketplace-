@@ -129,7 +129,7 @@ export default function Checkout() {
           delivery_date: deliveryDate,
           payment_method: paymentMethod,
           commission_amount: affiliateCommission,
-          status: 'completed'
+          status: 'pending'
         })
         .select()
         .single();

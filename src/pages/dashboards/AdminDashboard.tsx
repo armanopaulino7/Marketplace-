@@ -18,16 +18,18 @@ import {
   CheckCircle2,
   Camera,
   Search,
-  ArrowRight
+  ArrowRight,
+  LogOut
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '../../lib/utils';
 import WalletCard from '../../components/WalletCard';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function AdminDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [pendingProducts, setPendingProducts] = useState<any[]>([]);
@@ -132,7 +134,8 @@ export default function AdminDashboard() {
       // Fetch total sales (platform fees + delivery fees)
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('amount, delivery_fee');
+        .select('amount, delivery_fee')
+        .eq('status', 'completed');
       
       let totalSales = 0;
       if (!ordersError && orders) {
@@ -521,6 +524,7 @@ export default function AdminDashboard() {
                           <div className="text-sm font-bold text-stone-900 dark:text-white">#{order.id.substring(0, 8)}</div>
                           <div className="text-xs text-stone-500 dark:text-stone-400">{order.customer_name}</div>
                           <div className="text-[10px] text-stone-400">{order.customer_phone}</div>
+                          <div className="mt-1 text-[10px] text-indigo-600 font-bold">{order.neighborhood}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -531,7 +535,10 @@ export default function AdminDashboard() {
                                 <Package className="h-5 w-5 m-2.5 text-stone-300" />
                               )}
                             </div>
-                            <span className="font-bold text-stone-900 dark:text-white text-sm">{order.produtos?.name}</span>
+                            <div>
+                              <div className="font-bold text-stone-900 dark:text-white text-sm">{order.produtos?.name}</div>
+                              <div className="text-[10px] text-stone-400">Entrega: {new Date(order.delivery_date).toLocaleDateString()}</div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -963,7 +970,19 @@ export default function AdminDashboard() {
       case 'perfil':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seu Perfil</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seu Perfil</h1>
+              <button 
+                onClick={() => {
+                  signOut();
+                  navigate('/login');
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </div>
             <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
@@ -1012,11 +1031,17 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de configurações em breve!')}
+                  className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <Settings className="h-5 w-5" />
                   Configurações
                 </button>
-                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de edição de dados em breve!')}
+                  className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <UserIcon className="h-5 w-5" />
                   Editar Dados
                 </button>

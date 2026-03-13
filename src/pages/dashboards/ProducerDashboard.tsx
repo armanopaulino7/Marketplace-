@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   Camera,
   Search,
-  ArrowRight
+  ArrowRight,
+  LogOut
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +28,7 @@ import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function ProducerDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState<any[]>([]);
@@ -231,7 +232,7 @@ export default function ProducerDashboard() {
   };
 
   useEffect(() => {
-    if (user && activeTab === 'dashboard') {
+    if (user && (activeTab === 'dashboard' || activeTab === 'afiliados')) {
       fetchPendingAffiliations();
     }
   }, [user, activeTab]);
@@ -882,6 +883,9 @@ export default function ProducerDashboard() {
                         <div>
                           <div className="font-bold text-stone-900 dark:text-white">Pedido #{sale.id.substring(0, 8).toUpperCase()}</div>
                           <div className="text-sm text-stone-500 dark:text-stone-400">{sale.produtos?.name} • {new Date(sale.created_at).toLocaleDateString()}</div>
+                          <div className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider mt-1">
+                            {sale.neighborhood} • Entrega: {new Date(sale.delivery_date).toLocaleDateString()}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -955,7 +959,19 @@ export default function ProducerDashboard() {
       case 'perfil':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Perfil do Produtor</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Perfil do Produtor</h1>
+              <button 
+                onClick={() => {
+                  signOut();
+                  navigate('/login');
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </div>
             <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
@@ -1006,14 +1022,20 @@ export default function ProducerDashboard() {
                 </div>
               </div>
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de edição de dados cadastrais em breve!')}
+                  className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <div className="flex items-center gap-3">
                     <UserIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                     Dados Cadastrais
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
                 </button>
-                <button className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de dados bancários em breve!')}
+                  className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <Wallet className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                   Dados Bancários
                 </button>

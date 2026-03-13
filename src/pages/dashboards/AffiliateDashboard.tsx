@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Camera,
   Search,
-  ArrowRight
+  ArrowRight,
+  LogOut
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
@@ -29,7 +30,7 @@ import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function AffiliateDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -599,7 +600,19 @@ export default function AffiliateDashboard() {
       case 'perfil':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seu Perfil</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seu Perfil</h1>
+              <button 
+                onClick={() => {
+                  signOut();
+                  navigate('/login');
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </div>
             <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
@@ -650,11 +663,17 @@ export default function AffiliateDashboard() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de edição de perfil em breve!')}
+                  className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <UserIcon className="h-5 w-5" />
                   Editar Dados
                 </button>
-                <button className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de dados de pagamento em breve!')}
+                  className="flex items-center justify-center gap-2 p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <Wallet className="h-5 w-5" />
                   Dados de Pagamento
                 </button>

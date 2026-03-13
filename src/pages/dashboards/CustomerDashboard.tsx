@@ -12,7 +12,8 @@ import {
   ArrowRight,
   PlayCircle,
   Package,
-  Camera
+  Camera,
+  LogOut
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +21,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
 
 export default function CustomerDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState<any[]>([]);
@@ -327,7 +328,19 @@ export default function CustomerDashboard() {
       case 'perfil':
         return (
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900">Seu Perfil</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seu Perfil</h1>
+              <button 
+                onClick={() => {
+                  signOut();
+                  navigate('/login');
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </div>
             <div className="bg-white p-8 rounded-3xl border border-stone-200 max-w-2xl">
               <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                 <div className="relative group">
@@ -378,19 +391,25 @@ export default function CustomerDashboard() {
                 </div>
               </div>
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 border border-stone-200 rounded-2xl font-bold text-stone-700 hover:bg-stone-50 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de edição de dados em breve!')}
+                  className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <div className="flex items-center gap-3">
-                    <UserIcon className="h-5 w-5 text-stone-400" />
+                    <UserIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                     Meus Dados
                   </div>
-                  <ArrowRight className="h-4 w-4 text-stone-300" />
+                  <ArrowRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
                 </button>
-                <button className="w-full flex items-center justify-between p-4 border border-stone-200 rounded-2xl font-bold text-stone-700 hover:bg-stone-50 transition-all">
+                <button 
+                  onClick={() => alert('Funcionalidade de avaliações em breve!')}
+                  className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
                   <div className="flex items-center gap-3">
-                    <Star className="h-5 w-5 text-stone-400" />
+                    <Star className="h-5 w-5 text-stone-400 dark:text-stone-500" />
                     Minhas Avaliações
                   </div>
-                  <ArrowRight className="h-4 w-4 text-stone-300" />
+                  <ArrowRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
                 </button>
               </div>
             </div>
