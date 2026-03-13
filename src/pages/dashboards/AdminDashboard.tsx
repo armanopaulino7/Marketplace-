@@ -619,7 +619,7 @@ export default function AdminDashboard() {
 
               <div className="pt-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">Produtos no Marketplace</h2>
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">Produtos no CashLuanda</h2>
                   {loading && <div className="h-5 w-5 border-2 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />}
                 </div>
 

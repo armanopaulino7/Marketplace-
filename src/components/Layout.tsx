@@ -104,7 +104,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
       <header className="md:hidden bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 h-16 flex items-center justify-between px-4 sticky top-0 z-30">
         <div className="flex items-center gap-2">
           <ShoppingBag className="h-6 w-6 text-indigo-600" />
-          <span className="font-bold text-lg text-stone-900 dark:text-white">Marketplace</span>
+          <span className="font-bold text-lg text-stone-900 dark:text-white">CashLuanda</span>
         </div>
         <div className="flex items-center gap-2">
           <button 
@@ -145,7 +145,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           <div className="h-16 hidden md:flex items-center justify-between px-6 border-b border-stone-100 dark:border-stone-800">
             <div className="flex items-center gap-2">
               <ShoppingBag className="h-6 w-6 text-indigo-600" />
-              <span className="font-bold text-xl text-stone-900 dark:text-white">Marketplace</span>
+              <span className="font-bold text-xl text-stone-900 dark:text-white">CashLuanda</span>
             </div>
             <button 
               type="button"
@@ -215,7 +215,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           {children}
         </div>
         <footer className="py-8 px-4 text-center text-stone-400 text-xs">
-          &copy; {new Date().getFullYear()} Marketplace Multi-Role. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} CashLuanda. Todos os direitos reservados.
         </footer>
       </main>
     </div>

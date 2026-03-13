@@ -216,11 +216,11 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 py-12">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 py-12">
       <div className="max-w-4xl mx-auto px-4">
         <button 
           onClick={() => navigate(-1)}
-          className="mb-8 flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors font-bold"
+          className="mb-8 flex items-center gap-2 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors font-bold"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar
@@ -229,8 +229,8 @@ export default function Checkout() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Checkout Form */}
           <div className="space-y-6">
-            <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
-              <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-[2rem] border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-indigo-600" />
                 Dados do Comprador
               </h2>
@@ -243,7 +243,7 @@ export default function Checkout() {
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Seu nome completo" 
-                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
                   />
                 </div>
                 <div>
@@ -253,14 +253,14 @@ export default function Checkout() {
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     placeholder="Seu número de telefone" 
-                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none" 
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
-              <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-[2rem] border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
                 <Truck className="h-5 w-5 text-indigo-600" />
                 Entrega
               </h2>
@@ -271,7 +271,7 @@ export default function Checkout() {
                   <select 
                     value={selectedNeighborhood}
                     onChange={(e) => handleNeighborhoodChange(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
                   >
                     <option value="">Escolha um bairro...</option>
                     {deliveryFees.map((fee) => (
@@ -281,7 +281,7 @@ export default function Checkout() {
                     ))}
                   </select>
                   {selectedNeighborhood && (
-                    <p className="mt-2 text-xs text-emerald-600 font-bold">
+                    <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
                       Taxa de entrega: {selectedFee.toLocaleString()} Kz
                     </p>
                   )}
@@ -293,7 +293,7 @@ export default function Checkout() {
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
                     placeholder="Rua, número da casa, ponto de referência..." 
-                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium min-h-[100px]" 
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium min-h-[100px]" 
                   />
                 </div>
 
@@ -303,14 +303,14 @@ export default function Checkout() {
                     type="date" 
                     value={deliveryDate}
                     onChange={(e) => setDeliveryDate(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium" 
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium" 
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
-              <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-[2rem] border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-indigo-600" />
                 Pagamento
               </h2>
@@ -321,7 +321,7 @@ export default function Checkout() {
                   <select 
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium"
+                    className="w-full px-4 py-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
                   >
                     <option value="IBAN">IBAN</option>
                     <option value="PayPay">PayPay</option>
@@ -333,8 +333,8 @@ export default function Checkout() {
                 </div>
 
                 {paymentMethod !== 'Pagamento na entrega' && (
-                  <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                    <p className="text-xs text-stone-500 leading-relaxed">
+                  <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-2xl border border-stone-100 dark:border-stone-700">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                       Após clicar em finalizar, você receberá os dados para pagamento via <strong>{paymentMethod}</strong>. 
                       Sua compra será confirmada assim que o pagamento for validado.
                     </p>
@@ -345,7 +345,7 @@ export default function Checkout() {
               <button 
                 onClick={handlePurchase}
                 disabled={processing}
-                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {processing ? (
                   <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -362,7 +362,7 @@ export default function Checkout() {
                   <ShieldCheck className="h-3 w-3" />
                   Ambiente Seguro
                 </div>
-                <div className="h-3 w-px bg-stone-200" />
+                <div className="h-3 w-px bg-stone-200 dark:bg-stone-800" />
                 <div>SSL Encrypted</div>
               </div>
             </div>
@@ -370,46 +370,46 @@ export default function Checkout() {
 
           {/* Order Summary */}
           <div className="space-y-6">
-            <div className="bg-white p-8 rounded-[2rem] border border-stone-200 shadow-sm space-y-6">
-              <h2 className="text-xl font-bold text-stone-900">Resumo do Pedido</h2>
+            <div className="bg-white dark:bg-stone-900 p-8 rounded-[2rem] border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white">Resumo do Pedido</h2>
               
               <div className="flex gap-4">
-                <div className="h-20 w-20 bg-stone-100 rounded-2xl overflow-hidden flex-shrink-0">
+                <div className="h-20 w-20 bg-stone-100 dark:bg-stone-800 rounded-2xl overflow-hidden flex-shrink-0">
                   {product.imagens?.[0] ? (
                     <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-stone-300">
+                    <div className="w-full h-full flex items-center justify-center text-stone-300 dark:text-stone-600">
                       <Package className="h-8 w-8" />
                     </div>
                   )}
                 </div>
                 <div>
-                  <h3 className="font-bold text-stone-900 line-clamp-2">{product.name}</h3>
-                  <p className="text-xs text-stone-500 mt-1">{product.category}</p>
+                  <h3 className="font-bold text-stone-900 dark:text-white line-clamp-2">{product.name}</h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{product.category}</p>
                 </div>
               </div>
 
-              <div className="space-y-3 pt-6 border-t border-stone-100">
+              <div className="space-y-3 pt-6 border-t border-stone-100 dark:border-stone-800">
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">Subtotal</span>
-                  <span className="font-bold text-stone-900">{product.price.toLocaleString()} Kz</span>
+                  <span className="text-stone-500 dark:text-stone-400">Subtotal</span>
+                  <span className="font-bold text-stone-900 dark:text-white">{product.price.toLocaleString()} Kz</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">Taxa de Entrega</span>
-                  <span className="font-bold text-stone-900">
+                  <span className="text-stone-500 dark:text-stone-400">Taxa de Entrega</span>
+                  <span className="font-bold text-stone-900 dark:text-white">
                     {selectedFee > 0 ? `${selectedFee.toLocaleString()} Kz` : 'Selecione o bairro'}
                   </span>
                 </div>
-                <div className="flex justify-between text-lg pt-3 border-t border-stone-100">
-                  <span className="font-black text-stone-900">Total</span>
-                  <span className="font-black text-indigo-600">{(product.price + selectedFee).toLocaleString()} Kz</span>
+                <div className="flex justify-between text-lg pt-3 border-t border-stone-100 dark:border-stone-800">
+                  <span className="font-black text-stone-900 dark:text-white">Total</span>
+                  <span className="font-black text-indigo-600 dark:text-indigo-400">{(product.price + selectedFee).toLocaleString()} Kz</span>
                 </div>
               </div>
 
               {ref && (
-                <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-indigo-600" />
-                  <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Desconto de Afiliado Aplicado</span>
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-900/30 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Desconto de Afiliado Aplicado</span>
                 </div>
               )}
             </div>

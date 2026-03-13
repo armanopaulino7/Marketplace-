@@ -81,7 +81,7 @@ export default function ProductDetails() {
           className="mb-8 flex items-center gap-2 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors font-bold"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar para o Marketplace
+          Voltar para o CashLuanda
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
