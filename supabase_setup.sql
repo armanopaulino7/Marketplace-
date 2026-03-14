@@ -136,56 +136,68 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.withdrawals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.delivery_fees ENABLE ROW LEVEL SECURITY;
 
--- Profiles: Users can read all profiles, but only manage their own
+-- 1. PROFILES POLICIES
+-- Drop all possible previous policy names to ensure a clean state
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
-CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
-CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
--- Separate policy for admins to update profiles (avoids recursion in the main policy)
 DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
-CREATE POLICY "Admins can update any profile" ON public.profiles FOR UPDATE USING (
-  (SELECT (auth.jwt() -> 'user_metadata' ->> 'role') = 'adm')
-);
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_select_all" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_admin_all" ON public.profiles;
 
--- Produtos: Everyone can read approved products. Producers can manage their own.
+CREATE POLICY "profiles_select_all" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+-- 2. PRODUTOS POLICIES
 DROP POLICY IF EXISTS "Approved products are viewable by everyone" ON public.produtos;
-CREATE POLICY "Approved products are viewable by everyone" ON public.produtos FOR SELECT USING (status = 'approved' OR auth.uid() = producer_id OR is_admin());
-
 DROP POLICY IF EXISTS "Producers can insert own products" ON public.produtos;
-CREATE POLICY "Producers can insert own products" ON public.produtos FOR INSERT WITH CHECK (auth.uid() = producer_id);
-
 DROP POLICY IF EXISTS "Producers can update own products" ON public.produtos;
-CREATE POLICY "Producers can update own products" ON public.produtos FOR UPDATE USING (auth.uid() = producer_id OR is_admin());
 
--- Affiliations: Users can see their own affiliations.
+CREATE POLICY "produtos_select_policy" ON public.produtos FOR SELECT 
+USING (status = 'approved' OR auth.uid() = producer_id OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+CREATE POLICY "produtos_insert_policy" ON public.produtos FOR INSERT 
+WITH CHECK (auth.uid() = producer_id);
+
+CREATE POLICY "produtos_update_policy" ON public.produtos FOR UPDATE 
+USING (auth.uid() = producer_id OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+-- 3. AFFILIATIONS POLICIES
 DROP POLICY IF EXISTS "Users can view own affiliations" ON public.affiliations;
-CREATE POLICY "Users can view own affiliations" ON public.affiliations FOR SELECT USING (affiliate_id = auth.uid() OR (SELECT producer_id FROM public.produtos WHERE id = product_id) = auth.uid() OR is_admin());
-
 DROP POLICY IF EXISTS "Affiliates can request affiliation" ON public.affiliations;
-CREATE POLICY "Affiliates can request affiliation" ON public.affiliations FOR INSERT WITH CHECK (affiliate_id = auth.uid());
 
--- Orders: Customers see their orders, Producers see their sales, Affiliates see their referrals.
+CREATE POLICY "affiliations_select_policy" ON public.affiliations FOR SELECT 
+USING (affiliate_id = auth.uid() OR (SELECT producer_id FROM public.produtos WHERE id = product_id) = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+CREATE POLICY "affiliations_insert_policy" ON public.affiliations FOR INSERT 
+WITH CHECK (affiliate_id = auth.uid());
+
+-- 4. ORDERS POLICIES
 DROP POLICY IF EXISTS "Users can view relevant orders" ON public.orders;
-CREATE POLICY "Users can view relevant orders" ON public.orders FOR SELECT USING (customer_id = auth.uid() OR producer_id = auth.uid() OR affiliate_id = auth.uid() OR is_admin());
-
 DROP POLICY IF EXISTS "Customers can place orders" ON public.orders;
-CREATE POLICY "Customers can place orders" ON public.orders FOR INSERT WITH CHECK (customer_id = auth.uid());
 
--- Withdrawals: Users see their own. Admins see all.
+CREATE POLICY "orders_select_policy" ON public.orders FOR SELECT 
+USING (customer_id = auth.uid() OR producer_id = auth.uid() OR affiliate_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+CREATE POLICY "orders_insert_policy" ON public.orders FOR INSERT 
+WITH CHECK (customer_id = auth.uid());
+
+-- 5. WITHDRAWALS POLICIES
 DROP POLICY IF EXISTS "Users can view own withdrawals" ON public.withdrawals;
-CREATE POLICY "Users can view own withdrawals" ON public.withdrawals FOR SELECT USING (user_id = auth.uid() OR is_admin());
-
 DROP POLICY IF EXISTS "Users can request withdrawals" ON public.withdrawals;
-CREATE POLICY "Users can request withdrawals" ON public.withdrawals FOR INSERT WITH CHECK (user_id = auth.uid());
 
--- Delivery Fees: Everyone can read. Admins can manage.
+CREATE POLICY "withdrawals_select_policy" ON public.withdrawals FOR SELECT 
+USING (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+CREATE POLICY "withdrawals_insert_policy" ON public.withdrawals FOR INSERT 
+WITH CHECK (user_id = auth.uid());
+
+-- 6. DELIVERY FEES POLICIES
 DROP POLICY IF EXISTS "Delivery fees are viewable by everyone" ON public.delivery_fees;
-CREATE POLICY "Delivery fees are viewable by everyone" ON public.delivery_fees FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Admins can manage delivery fees" ON public.delivery_fees;
-CREATE POLICY "Admins can manage delivery fees" ON public.delivery_fees FOR ALL USING (is_admin());
+
+CREATE POLICY "delivery_fees_select_policy" ON public.delivery_fees FOR SELECT USING (true);
+CREATE POLICY "delivery_fees_admin_policy" ON public.delivery_fees FOR ALL 
+USING ((auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
