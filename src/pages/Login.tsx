@@ -18,20 +18,74 @@ export default function Login() {
     }
   }, [user, profile, navigate]);
 
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-3xl shadow-xl p-8 border border-amber-100 dark:border-amber-900/30 text-center">
+          <div className="bg-amber-50 dark:bg-amber-900/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="h-8 w-8 text-amber-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-stone-900 dark:text-white mb-4">Erro de Configuração</h1>
+          <p className="text-stone-600 dark:text-stone-400 mb-6">
+            O Supabase não está configurado corretamente no Vercel. Verifique as variáveis de ambiente <strong>VITE_SUPABASE_URL</strong> e <strong>VITE_SUPABASE_ANON_KEY</strong>.
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    alert('Tentando login...');
     setLoading(true);
     setError(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login for:', email);
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) throw authError;
-      // Redirect happens in useEffect once profile is loaded
+      if (authError) {
+        console.error('Auth error:', authError);
+        alert('Erro de Autenticação: ' + authError.message);
+        throw authError;
+      }
+      
+      console.log('Auth successful, user:', data.user?.id);
+      
+      // Check if profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user?.id)
+        .single();
+        
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        alert('Erro ao buscar perfil: ' + profileError.message);
+        if (profileError.code === 'PGRST116') {
+          throw new Error('Sua conta de autenticação existe, mas seu perfil não foi encontrado. Entre em contato com o suporte.');
+        }
+        throw profileError;
+      }
+      
+      console.log('Profile found, role:', profileData.role);
+      
+      // Force a small delay to ensure context updates or just navigate directly
+      // since we already have the role here.
+      navigate(`/dashboard/${profileData.role}`, { replace: true });
+      
     } catch (err: any) {
+      console.error('Login catch block:', err);
+      alert('Erro no Login: ' + (err.message || 'Erro desconhecido'));
       setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
     } finally {
       setLoading(false);
@@ -52,6 +106,16 @@ export default function Login() {
         <p className="mt-2 text-center text-sm text-stone-500 dark:text-stone-400">
           Acesse sua conta para gerenciar seu marketplace
         </p>
+        
+        {/* Connection Status Indicator */}
+        <div className="mt-4 flex justify-center">
+          <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-stone-900 rounded-full border border-stone-100 dark:border-stone-800 shadow-sm">
+            <div className={`h-2 w-2 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+              {isSupabaseConfigured ? 'Sistema Online' : 'Sistema Offline'}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

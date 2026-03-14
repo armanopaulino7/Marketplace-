@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   role TEXT DEFAULT 'customer' CHECK (role IN ('admin', 'producer', 'affiliate', 'customer')),
   full_name TEXT,
   avatar_url TEXT,
+  phone TEXT,
+  phone2 TEXT,
   balance DECIMAL(12,2) DEFAULT 0.00,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

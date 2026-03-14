@@ -8,8 +8,14 @@ export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
   supabaseAnonKey &&
   supabaseUrl.startsWith('https://') &&
-  !supabaseUrl.includes('your-supabase-url')
+  !supabaseUrl.includes('your-supabase-url') &&
+  !supabaseUrl.includes('placeholder-project')
 );
+
+console.log('Supabase Configured:', isSupabaseConfigured);
+if (!isSupabaseConfigured) {
+  console.warn('Supabase is NOT configured correctly. Check your environment variables.');
+}
 
 const url = isSupabaseConfigured ? supabaseUrl : 'https://placeholder-project.supabase.co';
 const key = isSupabaseConfigured ? supabaseAnonKey : 'placeholder-key';
