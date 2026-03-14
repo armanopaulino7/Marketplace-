@@ -46,29 +46,43 @@ export default function Register() {
         throw new Error('O número de telefone é obrigatório para produtores.');
       }
 
-      // 1. Sign up user
+      // 1. Sign up user with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            role,
+            phone,
+            phone2,
+          }
+        }
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error('Falha ao criar usuário.');
 
-      // 2. Create profile
+      // 2. Create or update profile
+      // We use upsert to handle cases where a database trigger might have already created the profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            email,
-            role,
-            phone: phone || null,
-            phone2: phone2 || null,
-          },
-        ]);
+        .upsert({
+          id: authData.user.id,
+          email,
+          role,
+          phone: phone || null,
+          phone2: phone2 || null,
+        }, { onConflict: 'id' });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Erro ao criar perfil:', profileError);
+        // If it's a foreign key error, it might be because the user is not yet fully "visible" 
+        // in the auth.users table due to email confirmation settings.
+        if (profileError.message.includes('foreign key')) {
+          throw new Error('Erro de permissão no banco de dados. Se você ativou a confirmação de e-mail no Supabase, por favor confirme seu e-mail antes de tentar entrar.');
+        }
+        throw profileError;
+      }
 
       // 3. Success!
       navigate(`/dashboard/${role}`);

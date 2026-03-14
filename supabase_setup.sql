@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   email TEXT UNIQUE,
-  role TEXT DEFAULT 'customer' CHECK (role IN ('admin', 'producer', 'affiliate', 'customer')),
+  role TEXT DEFAULT 'cliente' CHECK (role IN ('adm', 'produtor', 'afiliado', 'cliente')),
   full_name TEXT,
   avatar_url TEXT,
   phone TEXT,
@@ -14,6 +14,29 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 1.1 TRIGGER TO CREATE PROFILE ON SIGNUP
+-- This ensures the profile is created even if the frontend fails or there's a race condition
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, role, phone, phone2)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'cliente'),
+    NEW.raw_user_meta_data->>'phone',
+    NEW.raw_user_meta_data->>'phone2'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger the function every time a user is created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- 2. PRODUTOS TABLE
 CREATE TABLE IF NOT EXISTS public.produtos (
