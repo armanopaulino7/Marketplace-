@@ -176,41 +176,8 @@ export default function Checkout() {
 
       if (orderError) throw orderError;
 
-      // 2. Update Producer Wallet (Available immediately)
-      await supabase.rpc('process_sale_funds', {
-        user_id_param: product.producer_id,
-        amount_param: producerAmount,
-        description_param: `Venda do produto: ${product.name}`,
-        days_to_release: 0
-      });
-
-      // 3. Update Affiliate Wallet (Available immediately)
-      if (ref && affiliateCommission > 0) {
-        await supabase.rpc('process_sale_funds', {
-          user_id_param: ref,
-          amount_param: affiliateCommission,
-          description_param: `Comissão de afiliado: ${product.name}`,
-          days_to_release: 0
-        });
-      }
-
-      // 4. Update Admin Wallet (Available immediately)
-      const { data: adminUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1)
-        .single();
-
-      if (adminUser) {
-        const adminTotal = platformFee + selectedFee;
-        await supabase.rpc('process_sale_funds', {
-          user_id_param: adminUser.id,
-          amount_param: adminTotal,
-          description_param: `Taxa de plataforma (10%) + Entrega: ${product.name}`,
-          days_to_release: 0 // Admin gets it immediately
-        });
-      }
+      // Funds will be processed by the admin when the order is marked as 'completed'
+      // in the Admin Dashboard. This ensures balances only update after confirmation.
 
       setSuccess(true);
     } catch (err: any) {

@@ -141,13 +141,62 @@ export default function AdminDashboard() {
 
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
+      // Get order details first to process funds if completed
+      const { data: order, error: fetchError } = await supabase
+        .from('orders')
+        .select('*, produtos(name)')
+        .eq('id', orderId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
       const { error } = await supabase
         .from('orders')
         .update({ status })
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // If status is being updated to 'completed' and it wasn't completed before
+      if (status === 'completed' && order.status !== 'completed') {
+        // 1. Update Producer Wallet
+        if (order.producer_id && order.producer_commission > 0) {
+          await supabase.rpc('process_sale_funds', {
+            user_id_param: order.producer_id,
+            amount_param: order.producer_commission,
+            description_param: `Venda concluída: ${order.produtos?.name || 'Produto'}`,
+            days_to_release: 0
+          });
+        }
+
+        // 2. Update Affiliate Wallet
+        if (order.affiliate_id && order.commission_amount > 0) {
+          await supabase.rpc('process_sale_funds', {
+            user_id_param: order.affiliate_id,
+            amount_param: order.commission_amount,
+            description_param: `Comissão concluída: ${order.produtos?.name || 'Produto'}`,
+            days_to_release: 0
+          });
+        }
+
+        // 3. Update Admin Wallet
+        const adminTotal = (order.platform_fee || 0) + (order.delivery_fee || 0);
+        if (adminTotal > 0 && user) {
+          await supabase.rpc('process_sale_funds', {
+            user_id_param: user.id, // Current admin
+            amount_param: adminTotal,
+            description_param: `Taxa de plataforma + Entrega concluída: ${order.produtos?.name || 'Produto'}`,
+            days_to_release: 0
+          });
+        }
+      }
+
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      if (status === 'completed') {
+        alert('Pedido marcado como concluído e saldos creditados!');
+        fetchStats();
+        fetchOrders();
+      }
     } catch (err: any) {
       console.error('Error updating order status:', err);
       alert('Erro ao atualizar status do pedido: ' + (err.message || 'Erro desconhecido'));
