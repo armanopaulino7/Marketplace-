@@ -8,6 +8,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  clearSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,6 +17,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const clearSession = () => {
+    console.warn('Clearing auth session manually...');
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    setUser(null);
+    setProfile(null);
+    window.location.reload();
+  };
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -121,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signOut, clearSession }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,7 +10,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, clearSession } = useAuth();
 
   useEffect(() => {
     if (user && profile) {
@@ -223,6 +223,16 @@ export default function Login() {
               >
                 Criar nova conta
               </Link>
+            </div>
+
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={clearSession}
+                className="text-xs text-stone-400 hover:text-indigo-600 transition-colors underline underline-offset-4"
+              >
+                Problemas ao entrar? Limpar sessão
+              </button>
             </div>
           </div>
         </div>
