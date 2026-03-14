@@ -15,15 +15,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.1 FUNCTION TO CHECK IF USER IS ADMIN (Prevents recursion)
+-- 1.1 FUNCTION TO CHECK IF USER IS ADMIN (Uses JWT metadata to avoid recursion)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN (
-    SELECT role = 'adm'
-    FROM public.profiles
-    WHERE id = auth.uid()
-  );
+  -- Check role from JWT metadata first (fastest, no recursion)
+  IF (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm') THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Fallback to table check but only if not already checking profiles
+  -- To be safe and avoid recursion, we'll just rely on the JWT or a very specific check
+  RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -141,7 +144,13 @@ DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id OR is_admin());
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Separate policy for admins to update profiles (avoids recursion in the main policy)
+DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
+CREATE POLICY "Admins can update any profile" ON public.profiles FOR UPDATE USING (
+  (SELECT (auth.jwt() -> 'user_metadata' ->> 'role') = 'adm')
+);
 
 -- Produtos: Everyone can read approved products. Producers can manage their own.
 DROP POLICY IF EXISTS "Approved products are viewable by everyone" ON public.produtos;
