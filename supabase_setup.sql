@@ -102,6 +102,9 @@ CREATE TABLE IF NOT EXISTS public.orders (
   neighborhood TEXT,
   payment_method TEXT,
   payment_proof TEXT,
+  delivery_date TEXT,
+  producer_commission DECIMAL(12,2) DEFAULT 0.00,
+  platform_fee DECIMAL(12,2) DEFAULT 0.00,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -175,14 +178,25 @@ CREATE POLICY "affiliations_insert_policy" ON public.affiliations FOR INSERT
 WITH CHECK (affiliate_id = auth.uid());
 
 -- 4. ORDERS POLICIES
-DROP POLICY IF EXISTS "Users can view relevant orders" ON public.orders;
-DROP POLICY IF EXISTS "Customers can place orders" ON public.orders;
+DROP POLICY IF EXISTS "orders_select_policy" ON public.orders;
+DROP POLICY IF EXISTS "orders_insert_policy" ON public.orders;
 
 CREATE POLICY "orders_select_policy" ON public.orders FOR SELECT 
-USING (customer_id = auth.uid() OR producer_id = auth.uid() OR affiliate_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+USING (
+  customer_id = auth.uid() OR 
+  producer_id = auth.uid() OR 
+  affiliate_id = auth.uid() OR 
+  (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm')
+);
 
+-- Allow anyone to place an order (including guests)
+-- If logged in, customer_id must match auth.uid()
+-- If guest, customer_id must be null
 CREATE POLICY "orders_insert_policy" ON public.orders FOR INSERT 
-WITH CHECK (customer_id = auth.uid());
+WITH CHECK (
+  (auth.uid() IS NOT NULL AND customer_id = auth.uid()) OR 
+  (auth.uid() IS NULL AND customer_id IS NULL)
+);
 
 -- 5. WITHDRAWALS POLICIES
 DROP POLICY IF EXISTS "Users can view own withdrawals" ON public.withdrawals;
