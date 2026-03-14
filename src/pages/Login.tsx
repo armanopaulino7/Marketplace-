@@ -62,18 +62,37 @@ export default function Login() {
       console.log('Auth successful, user:', data.user?.id);
       
       // Check if profile exists
-      const { data: profileData, error: profileError } = await supabase
+      let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user?.id)
         .single();
         
-      if (profileError) {
+      if (profileError && profileError.code === 'PGRST116') {
+        console.log('Profile missing, creating default profile...');
+        // Lazy create profile if it doesn't exist
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: data.user?.id,
+              email: data.user?.email,
+              role: data.user?.user_metadata?.role || 'cliente',
+              phone: data.user?.user_metadata?.phone || null,
+              phone2: data.user?.user_metadata?.phone2 || null,
+            }
+          ])
+          .select('role')
+          .single();
+
+        if (createError) {
+          console.error('Failed to create lazy profile:', createError);
+          throw new Error('Sua conta existe, mas não conseguimos criar seu perfil automaticamente. Por favor, tente se cadastrar novamente ou contate o suporte.');
+        }
+        profileData = newProfile;
+      } else if (profileError) {
         console.error('Profile fetch error:', profileError);
         alert('Erro ao buscar perfil: ' + profileError.message);
-        if (profileError.code === 'PGRST116') {
-          throw new Error('Sua conta de autenticação existe, mas seu perfil não foi encontrado. Entre em contato com o suporte.');
-        }
         throw profileError;
       }
       

@@ -47,6 +47,7 @@ export default function Register() {
       }
 
       // 1. Sign up user with metadata
+      // The profile will be created automatically by a database trigger
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -62,30 +63,15 @@ export default function Register() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Falha ao criar usuário.');
 
-      // 2. Create or update profile
-      // We use upsert to handle cases where a database trigger might have already created the profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          email,
-          role,
-          phone: phone || null,
-          phone2: phone2 || null,
-        }, { onConflict: 'id' });
-
-      if (profileError) {
-        console.error('Erro ao criar perfil:', profileError);
-        // If it's a foreign key error, it might be because the user is not yet fully "visible" 
-        // in the auth.users table due to email confirmation settings.
-        if (profileError.message.includes('foreign key')) {
-          throw new Error('Erro de permissão no banco de dados. Se você ativou a confirmação de e-mail no Supabase, por favor confirme seu e-mail antes de tentar entrar.');
-        }
-        throw profileError;
-      }
-
       // 3. Success!
-      navigate(`/dashboard/${role}`);
+      // If email confirmation is required, the user might not be logged in yet.
+      // We'll show a success message or redirect.
+      if (authData.session) {
+        navigate(`/dashboard/${role}`);
+      } else {
+        alert('Conta criada com sucesso! Por favor, verifique seu e-mail para confirmar a conta (se a confirmação estiver ativada).');
+        navigate('/login');
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao criar conta. Tente novamente.');
     } finally {
