@@ -148,9 +148,9 @@ export default function AdminDashboard() {
 
       if (error) throw error;
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating order status:', err);
-      alert('Erro ao atualizar status do pedido.');
+      alert('Erro ao atualizar status do pedido: ' + (err.message || 'Erro desconhecido'));
     }
   };
 
@@ -411,9 +411,9 @@ export default function AdminDashboard() {
       
       setPendingProducts(prev => prev.filter(p => p.id !== productId));
       fetchStats();
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Error ${status} product:`, err);
-      alert('Erro ao processar ação no produto.');
+      alert(`Erro ao ${status === 'approved' ? 'aprovar' : 'rejeitar'} produto: ` + (err.message || 'Erro desconhecido'));
     }
   };
 
@@ -461,9 +461,9 @@ export default function AdminDashboard() {
       
       setPendingWithdrawals(prev => prev.filter(w => w.id !== withdrawalId));
       fetchStats();
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Error ${status} withdrawal:`, err);
-      alert('Erro ao processar ação no saque.');
+      alert('Erro ao processar ação no saque: ' + (err.message || 'Erro desconhecido'));
     }
   };
 
