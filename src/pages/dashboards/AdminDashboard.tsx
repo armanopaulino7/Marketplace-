@@ -38,6 +38,7 @@ import { cn } from '../../lib/utils';
 import WalletCard from '../../components/WalletCard';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
+import ChangePasswordForm from '../../components/ChangePasswordForm';
 
 export default function AdminDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -141,6 +142,7 @@ export default function AdminDashboard() {
 
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
+      console.log(`Updating order ${orderId} to ${status}`);
       // Get order details first to process funds if completed
       const { data: order, error: fetchError } = await supabase
         .from('orders')
@@ -159,29 +161,39 @@ export default function AdminDashboard() {
 
       // If status is being updated to 'completed' and it wasn't completed before
       if (status === 'completed' && order.status !== 'completed') {
+        console.log('Processing funds for completed order:', order);
+        
         // 1. Update Producer Wallet
-        if (order.producer_id && order.producer_commission > 0) {
+        const producerComm = Number(order.producer_commission);
+        if (order.producer_id && producerComm > 0) {
+          console.log(`Crediting producer ${order.producer_id}: ${producerComm}`);
           await supabase.rpc('process_sale_funds', {
             user_id_param: order.producer_id,
-            amount_param: order.producer_commission,
+            amount_param: producerComm,
             description_param: `Venda concluída: ${order.produtos?.name || 'Produto'}`,
             days_to_release: 0
           });
         }
 
         // 2. Update Affiliate Wallet
-        if (order.affiliate_id && order.commission_amount > 0) {
+        const affiliateComm = Number(order.commission_amount);
+        if (order.affiliate_id && affiliateComm > 0) {
+          console.log(`Crediting affiliate ${order.affiliate_id}: ${affiliateComm}`);
           await supabase.rpc('process_sale_funds', {
             user_id_param: order.affiliate_id,
-            amount_param: order.commission_amount,
+            amount_param: affiliateComm,
             description_param: `Comissão concluída: ${order.produtos?.name || 'Produto'}`,
             days_to_release: 0
           });
         }
 
         // 3. Update Admin Wallet
-        const adminTotal = (order.platform_fee || 0) + (order.delivery_fee || 0);
+        const platformFee = Number(order.platform_fee || 0);
+        const deliveryFee = Number(order.delivery_fee || 0);
+        const adminTotal = platformFee + deliveryFee;
+        
         if (adminTotal > 0 && user) {
+          console.log(`Crediting admin ${user.id}: ${adminTotal}`);
           await supabase.rpc('process_sale_funds', {
             user_id_param: user.id, // Current admin
             amount_param: adminTotal,
@@ -487,16 +499,20 @@ export default function AdminDashboard() {
         
         if (walletFetchError) throw walletFetchError;
 
-        if (wallet.balance < withdrawal.amount) {
+        const withdrawalAmount = Number(withdrawal.amount);
+        const walletBalance = Number(wallet.balance);
+
+        if (walletBalance < withdrawalAmount) {
           alert('Usuário não possui saldo suficiente para este saque.');
           return;
         }
 
-        // Deduct from wallet
-        const { error: walletUpdateError } = await supabase
-          .from('wallets')
-          .update({ balance: wallet.balance - withdrawal.amount })
-          .eq('user_id', withdrawal.user_id);
+        // Deduct from wallet using RPC to be safer and avoid RLS issues
+        const { error: walletUpdateError } = await supabase.rpc('deduct_wallet_balance', {
+          user_id_param: withdrawal.user_id,
+          amount_param: withdrawalAmount,
+          description_param: `Saque aprovado: ${withdrawalId}`
+        });
         
         if (walletUpdateError) throw walletUpdateError;
       }
@@ -510,6 +526,7 @@ export default function AdminDashboard() {
       
       setPendingWithdrawals(prev => prev.filter(w => w.id !== withdrawalId));
       fetchStats();
+      alert(`Saque ${status === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso!`);
     } catch (err: any) {
       console.error(`Error ${status} withdrawal:`, err);
       alert('Erro ao processar ação no saque: ' + (err.message || 'Erro desconhecido'));
@@ -1396,6 +1413,10 @@ export default function AdminDashboard() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-8 max-w-2xl">
+              <ChangePasswordForm />
             </div>
           </div>
         );

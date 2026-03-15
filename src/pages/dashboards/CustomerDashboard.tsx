@@ -30,6 +30,7 @@ import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
+import ChangePasswordForm from '../../components/ChangePasswordForm';
 
 export default function CustomerDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -536,6 +537,10 @@ export default function CustomerDashboard() {
                   </div>
                   <ArrowRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
                 </button>
+              </div>
+
+              <div className="mt-8">
+                <ChangePasswordForm />
               </div>
             </div>
           </div>

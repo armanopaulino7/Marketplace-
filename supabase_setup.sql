@@ -11,6 +11,16 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   phone TEXT,
   phone2 TEXT,
   balance DECIMAL(12,2) DEFAULT 0.00,
+  iban_platform TEXT,
+  paypay_platform TEXT,
+  express_platform TEXT,
+  unitel_platform TEXT,
+  afri_platform TEXT,
+  iban_private TEXT,
+  bank_name_private TEXT,
+  holder_name_private TEXT,
+  platform_bank_details JSONB DEFAULT '{}',
+  private_bank_details JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -44,6 +54,11 @@ BEGIN
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'avatar_url'
   );
+  
+  -- Create a wallet for the new user
+  INSERT INTO public.wallets (user_id, balance, pending_balance)
+  VALUES (NEW.id, 0, 0);
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -109,18 +124,37 @@ CREATE TABLE IF NOT EXISTS public.orders (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. WITHDRAWALS TABLE
-CREATE TABLE IF NOT EXISTS public.withdrawals (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id),
-  amount DECIMAL(12,2) NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-  bank_name TEXT,
-  account_number TEXT,
-  account_holder TEXT,
-  iban TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- 5. WITHDRAWAL REQUESTS TABLE
+CREATE TABLE IF NOT EXISTS public.withdrawal_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.profiles(id) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    method TEXT NOT NULL, -- 'IBAN', 'PayPay', 'Multicaixa Express', 'Unitel Money', 'AfriMoney'
+    details JSONB NOT NULL, -- Armazena IBAN, número de telefone, etc.
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- WALLET SYSTEM TABLES
+CREATE TABLE IF NOT EXISTS public.wallets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.profiles(id) NOT NULL UNIQUE,
+    balance DECIMAL(12,2) DEFAULT 0,
+    pending_balance DECIMAL(12,2) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.wallet_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    wallet_id UUID REFERENCES public.wallets(id) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    type TEXT NOT NULL, -- 'sale', 'withdrawal', 'release', 'commission'
+    status TEXT DEFAULT 'pending', -- 'pending', 'completed'
+    description TEXT,
+    release_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- 6. DELIVERY FEES TABLE
@@ -136,7 +170,9 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.produtos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.withdrawals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.withdrawal_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.delivery_fees ENABLE ROW LEVEL SECURITY;
 
 -- 1. PROFILES POLICIES
@@ -148,6 +184,7 @@ DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_select_all" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_admin_all" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 
 CREATE POLICY "profiles_select_all" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
@@ -199,14 +236,28 @@ WITH CHECK (
 );
 
 -- 5. WITHDRAWALS POLICIES
-DROP POLICY IF EXISTS "Users can view own withdrawals" ON public.withdrawals;
-DROP POLICY IF EXISTS "Users can request withdrawals" ON public.withdrawals;
+DROP POLICY IF EXISTS "withdrawals_select_policy" ON public.withdrawal_requests;
+DROP POLICY IF EXISTS "withdrawals_insert_policy" ON public.withdrawal_requests;
 
-CREATE POLICY "withdrawals_select_policy" ON public.withdrawals FOR SELECT 
+CREATE POLICY "withdrawals_select_policy" ON public.withdrawal_requests FOR SELECT 
 USING (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
 
-CREATE POLICY "withdrawals_insert_policy" ON public.withdrawals FOR INSERT 
+CREATE POLICY "withdrawals_insert_policy" ON public.withdrawal_requests FOR INSERT 
 WITH CHECK (user_id = auth.uid());
+
+-- WALLET POLICIES
+DROP POLICY IF EXISTS "wallets_select_policy" ON public.wallets;
+CREATE POLICY "wallets_select_policy" ON public.wallets FOR SELECT 
+USING (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+DROP POLICY IF EXISTS "wallet_transactions_select_policy" ON public.wallet_transactions;
+CREATE POLICY "wallet_transactions_select_policy" ON public.wallet_transactions FOR SELECT 
+USING (
+  EXISTS (
+    SELECT 1 FROM public.wallets
+    WHERE id = wallet_transactions.wallet_id AND (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'))
+  )
+);
 
 -- 6. DELIVERY FEES POLICIES
 DROP POLICY IF EXISTS "Delivery fees are viewable by everyone" ON public.delivery_fees;
@@ -215,3 +266,133 @@ DROP POLICY IF EXISTS "Admins can manage delivery fees" ON public.delivery_fees;
 CREATE POLICY "delivery_fees_select_policy" ON public.delivery_fees FOR SELECT USING (true);
 CREATE POLICY "delivery_fees_admin_policy" ON public.delivery_fees FOR ALL 
 USING ((auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
+-- 7. RPC FUNCTIONS
+CREATE OR REPLACE FUNCTION public.process_sale_funds(
+    user_id_param UUID, 
+    amount_param DECIMAL, 
+    description_param TEXT,
+    days_to_release INTEGER DEFAULT 7
+)
+RETURNS VOID AS $$
+DECLARE
+    v_wallet_id UUID;
+BEGIN
+    -- Obter ou criar carteira
+    SELECT id INTO v_wallet_id FROM public.wallets WHERE user_id = user_id_param;
+    
+    IF v_wallet_id IS NULL THEN
+        IF days_to_release = 0 THEN
+            INSERT INTO public.wallets (user_id, balance, pending_balance)
+            VALUES (user_id_param, amount_param, 0)
+            RETURNING id INTO v_wallet_id;
+        ELSE
+            INSERT INTO public.wallets (user_id, balance, pending_balance)
+            VALUES (user_id_param, 0, amount_param)
+            RETURNING id INTO v_wallet_id;
+        END IF;
+    ELSE
+        IF days_to_release = 0 THEN
+            UPDATE public.wallets
+            SET balance = balance + amount_param,
+                updated_at = now()
+            WHERE id = v_wallet_id;
+        ELSE
+            UPDATE public.wallets
+            SET pending_balance = pending_balance + amount_param,
+                updated_at = now()
+            WHERE id = v_wallet_id;
+        END IF;
+    END IF;
+
+    -- Registrar transação
+    INSERT INTO public.wallet_transactions (wallet_id, amount, type, status, description, release_at)
+    VALUES (
+        v_wallet_id, 
+        amount_param, 
+        'sale', 
+        CASE WHEN days_to_release = 0 THEN 'completed' ELSE 'pending' END, 
+        description_param, 
+        now() + (days_to_release || ' days')::interval
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.deduct_wallet_balance(
+    user_id_param UUID, 
+    amount_param DECIMAL, 
+    description_param TEXT
+)
+RETURNS VOID AS $$
+DECLARE
+    v_wallet_id UUID;
+BEGIN
+    -- Obter carteira
+    SELECT id INTO v_wallet_id FROM public.wallets WHERE user_id = user_id_param;
+    
+    IF v_wallet_id IS NULL THEN
+        RAISE EXCEPTION 'Carteira não encontrada para o usuário %', user_id_param;
+    END IF;
+
+    -- Verificar saldo
+    IF (SELECT balance FROM public.wallets WHERE id = v_wallet_id) < amount_param THEN
+        RAISE EXCEPTION 'Saldo insuficiente';
+    END IF;
+
+    -- Deduzir saldo
+    UPDATE public.wallets
+    SET balance = balance - amount_param,
+        updated_at = now()
+    WHERE id = v_wallet_id;
+
+    -- Registrar transação
+    INSERT INTO public.wallet_transactions (wallet_id, amount, type, status, description, release_at)
+    VALUES (
+        v_wallet_id, 
+        -amount_param, 
+        'withdrawal', 
+        'completed', 
+        description_param, 
+        now()
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.release_matured_funds(user_id_param UUID)
+RETURNS DECIMAL AS $$
+DECLARE
+    v_wallet_id UUID;
+    v_total_released DECIMAL := 0;
+BEGIN
+    SELECT id INTO v_wallet_id FROM public.wallets WHERE user_id = user_id_param;
+    
+    IF v_wallet_id IS NULL THEN
+        RETURN 0;
+    END IF;
+
+    -- Somar transações pendentes que já passaram da data de liberação
+    SELECT COALESCE(SUM(amount), 0) INTO v_total_released
+    FROM public.wallet_transactions
+    WHERE wallet_id = v_wallet_id 
+      AND status = 'pending' 
+      AND release_at <= now();
+
+    IF v_total_released > 0 THEN
+        -- Atualizar carteira
+        UPDATE public.wallets
+        SET balance = balance + v_total_released,
+            pending_balance = pending_balance - v_total_released,
+            updated_at = now()
+        WHERE id = v_wallet_id;
+
+        -- Marcar transações como completadas
+        UPDATE public.wallet_transactions
+        SET status = 'completed'
+        WHERE wallet_id = v_wallet_id 
+          AND status = 'pending' 
+          AND release_at <= now();
+    END IF;
+
+    RETURN v_total_released;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

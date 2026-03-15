@@ -39,6 +39,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
+import ChangePasswordForm from '../../components/ChangePasswordForm';
 
 export default function AffiliateDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -329,7 +330,7 @@ export default function AffiliateDashboard() {
               <p className="text-stone-500 dark:text-stone-400">Promova produtos e acompanhe suas comissões.</p>
             </div>
 
-            <WalletCard hideWithdraw={true} />
+            <WalletCard />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
@@ -800,6 +801,10 @@ export default function AffiliateDashboard() {
                   <Wallet className="h-5 w-5" />
                   Dados de Pagamento
                 </button>
+              </div>
+
+              <div className="mt-8">
+                <ChangePasswordForm />
               </div>
             </div>
           </div>

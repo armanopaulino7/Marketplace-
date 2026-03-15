@@ -144,11 +144,12 @@ export default function Checkout() {
         return;
       }
 
+      const price = Number(product.price);
       const platformFeeRate = 0.10; // 10% platform fee
-      const platformFee = product.price * platformFeeRate;
-      const affiliateCommission = ref ? (product.price * (product.commission_rate / 100)) : 0;
-      const producerAmount = product.price - affiliateCommission - platformFee;
-      const totalOrderAmount = product.price + selectedFee;
+      const platformFee = price * platformFeeRate;
+      const affiliateCommission = ref ? (price * (Number(product.commission_rate) / 100)) : 0;
+      const producerAmount = price - affiliateCommission - platformFee;
+      const totalOrderAmount = price + Number(selectedFee);
 
       // 1. Create Order
       const { data: order, error: orderError } = await supabase
