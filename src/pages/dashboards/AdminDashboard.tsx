@@ -204,10 +204,10 @@ export default function AdminDashboard() {
       }
 
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      fetchOrders(); // Refresh to ensure sync
       if (status === 'completed') {
         alert('Pedido marcado como concluído e saldos creditados!');
         fetchStats();
-        fetchOrders();
       }
     } catch (err: any) {
       console.error('Error updating order status:', err);

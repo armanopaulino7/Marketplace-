@@ -217,6 +217,7 @@ WITH CHECK (affiliate_id = auth.uid());
 -- 4. ORDERS POLICIES
 DROP POLICY IF EXISTS "orders_select_policy" ON public.orders;
 DROP POLICY IF EXISTS "orders_insert_policy" ON public.orders;
+DROP POLICY IF EXISTS "orders_update_policy" ON public.orders;
 
 CREATE POLICY "orders_select_policy" ON public.orders FOR SELECT 
 USING (
@@ -235,15 +236,25 @@ WITH CHECK (
   (auth.uid() IS NULL AND customer_id IS NULL)
 );
 
+CREATE POLICY "orders_update_policy" ON public.orders FOR UPDATE
+USING (
+  producer_id = auth.uid() OR 
+  (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm')
+);
+
 -- 5. WITHDRAWALS POLICIES
 DROP POLICY IF EXISTS "withdrawals_select_policy" ON public.withdrawal_requests;
 DROP POLICY IF EXISTS "withdrawals_insert_policy" ON public.withdrawal_requests;
+DROP POLICY IF EXISTS "withdrawals_update_policy" ON public.withdrawal_requests;
 
 CREATE POLICY "withdrawals_select_policy" ON public.withdrawal_requests FOR SELECT 
 USING (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
 
 CREATE POLICY "withdrawals_insert_policy" ON public.withdrawal_requests FOR INSERT 
 WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "withdrawals_update_policy" ON public.withdrawal_requests FOR UPDATE
+USING ((auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
 
 -- WALLET POLICIES
 DROP POLICY IF EXISTS "wallets_select_policy" ON public.wallets;
