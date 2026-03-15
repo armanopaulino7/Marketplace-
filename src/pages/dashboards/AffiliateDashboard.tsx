@@ -144,6 +144,7 @@ export default function AffiliateDashboard() {
         .from('produtos')
         .select('*')
         .eq('status', 'approved')
+        .gt('quantity', 0)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -172,14 +173,16 @@ export default function AffiliateDashboard() {
       const { data: products, error: pError } = await supabase
         .from('produtos')
         .select('*, profiles(email)')
-        .eq('status', 'approved');
+        .eq('status', 'approved')
+        .gt('quantity', 0);
 
       if (pError) {
         console.warn('Join with profiles failed in AffiliateDashboard, fetching without join:', pError);
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('produtos')
           .select('*')
-          .eq('status', 'approved');
+          .eq('status', 'approved')
+          .gt('quantity', 0);
         
         if (fallbackError) throw fallbackError;
         

@@ -125,6 +125,7 @@ export default function CustomerDashboard() {
         .from('produtos')
         .select('*')
         .eq('status', 'approved')
+        .gt('quantity', 0)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -340,7 +341,7 @@ export default function CustomerDashboard() {
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {['Design', 'Marketing', 'Programação', 'Negócios'].map((cat, i) => (
+                {['Moda', 'Eletrônicos', 'Casa', 'Beleza'].map((cat, i) => (
                   <button 
                     key={i} 
                     onClick={() => setSearchTerm(cat)}
@@ -381,9 +382,14 @@ export default function CustomerDashboard() {
                           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-black text-indigo-600 shadow-sm">
                             {product.price.toLocaleString()} Kz
                           </div>
-                          <div className="absolute bottom-3 left-3">
+                          <div className="absolute bottom-3 left-3 flex gap-2">
                             <span className="px-2 py-1 bg-stone-900/60 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg uppercase tracking-wider">
                               {product.category}
+                            </span>
+                            <span className={`px-2 py-1 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg uppercase tracking-wider ${
+                              product.condition === 'Novo' ? 'bg-emerald-600/60' : 'bg-amber-600/60'
+                            }`}>
+                              {product.condition || 'Novo'}
                             </span>
                           </div>
                         </div>

@@ -115,6 +115,13 @@ export default function ProductDetails() {
                 <span className="px-3 py-1 bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 text-xs font-bold rounded-full uppercase tracking-widest">
                   {product.subcategory}
                 </span>
+                <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-widest ${
+                  product.condition === 'Novo' 
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' 
+                    : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+                }`}>
+                  {product.condition || 'Novo'}
+                </span>
               </div>
               <h1 className="text-4xl font-black text-stone-900 dark:text-white mb-2 leading-tight">{product.name}</h1>
               <div className="flex items-center gap-4">
@@ -134,13 +141,20 @@ export default function ProductDetails() {
               </div>
 
               <div className="space-y-4">
-                <button 
-                  onClick={() => navigate(`/checkout/${product.id}${ref ? `?ref=${ref}` : ''}`)}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3"
-                >
-                  <ShoppingBag className="h-6 w-6" />
-                  Comprar Agora
-                </button>
+                {product.quantity > 0 ? (
+                  <button 
+                    onClick={() => navigate(`/checkout/${product.id}${ref ? `?ref=${ref}` : ''}`)}
+                    className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3"
+                  >
+                    <ShoppingBag className="h-6 w-6" />
+                    Comprar Agora
+                  </button>
+                ) : (
+                  <div className="w-full py-4 bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 cursor-not-allowed">
+                    <Package className="h-6 w-6" />
+                    Produto Esgotado
+                  </div>
+                )}
                 <p className="text-center text-xs text-stone-400 dark:text-stone-500">Pagamento 100% seguro e processamento imediato.</p>
               </div>
 

@@ -1012,8 +1012,21 @@ export default function AdminDashboard() {
                     users.map((u) => (
                       <tr key={u.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="font-bold text-stone-900 dark:text-white">{u.email}</div>
-                          <div className="text-xs text-stone-500 dark:text-stone-500">ID: {u.id.substring(0, 8)}...</div>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-400 font-bold overflow-hidden border border-stone-200 dark:border-stone-700">
+                              {u.avatar_url ? (
+                                <img src={u.avatar_url} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                (u.full_name || u.email || 'U').charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 dark:text-white text-sm">
+                                {u.full_name || u.email?.split('@')[0] || 'Usuário'}
+                              </div>
+                              <div className="text-xs text-stone-500 dark:text-stone-500">{u.email}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className="px-2 py-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-[10px] font-bold uppercase rounded-lg">{u.role}</span>

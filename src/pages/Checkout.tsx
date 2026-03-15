@@ -176,6 +176,14 @@ export default function Checkout() {
         .single();
 
       if (orderError) throw orderError;
+      
+      // 2. Decrement Product Quantity
+      const { error: updateError } = await supabase
+        .from('produtos')
+        .update({ quantity: Math.max(0, product.quantity - 1) })
+        .eq('id', product.id);
+
+      if (updateError) console.error('Error updating product quantity:', updateError);
 
       // Funds will be processed by the admin when the order is marked as 'completed'
       // in the Admin Dashboard. This ensures balances only update after confirmation.

@@ -61,6 +61,7 @@ export default function ProducerDashboard() {
     pickup_address: '',
     phone1: '',
     phone2: '',
+    condition: 'Novo',
     imagens: [] as string[],
     variations: {
       tamanho: [] as string[],
@@ -122,7 +123,7 @@ export default function ProducerDashboard() {
       // Try with join first
       const { data, error } = await supabase
         .from('affiliations')
-        .select('*, profiles!affiliate_id(email, full_name), produtos(name)')
+        .select('*, profiles!affiliate_id(email, full_name, avatar_url), produtos(name)')
         .in('product_id', productIds)
         .eq('status', 'approved');
 
@@ -454,6 +455,7 @@ export default function ProducerDashboard() {
           pickup_address: formData.pickup_address,
           phone1: formData.phone1,
           phone2: formData.phone2,
+          condition: formData.condition,
           imagens: formData.imagens,
           variations: formData.variations,
           status: 'pending'
@@ -473,6 +475,7 @@ export default function ProducerDashboard() {
         pickup_address: '',
         phone1: '',
         phone2: '',
+        condition: 'Novo',
         imagens: [],
         variations: { tamanho: [], peso: [], cor: [] }
       });
@@ -851,18 +854,38 @@ export default function ProducerDashboard() {
                         </div>
                       </div>
 
-                    <div>
-                      <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Endereço de Recolha (Pickup) *</label>
-                      <input 
-                        required
-                        type="text" 
-                        value={formData.pickup_address}
-                        onChange={e => setFormData({...formData, pickup_address: e.target.value})}
-                        placeholder="Ex: Rua Direita da Samba, Luanda (Seu endereço completo)" 
-                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
-                      />
-                      <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1 italic">Este endereço será usado pelo ADM para recolher o produto para entrega.</p>
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Condição do Produto *</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {['Novo', 'Usado'].map((cond) => (
+                              <button
+                                key={cond}
+                                type="button"
+                                onClick={() => setFormData({...formData, condition: cond})}
+                                className={`py-3 rounded-2xl font-bold text-sm transition-all border ${
+                                  formData.condition === cond 
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
+                                    : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:border-indigo-200'
+                                }`}
+                              >
+                                {cond}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Endereço de Recolha (Pickup) *</label>
+                          <input 
+                            required
+                            type="text" 
+                            value={formData.pickup_address}
+                            onChange={e => setFormData({...formData, pickup_address: e.target.value})}
+                            placeholder="Ex: Rua Direita da Samba, Luanda" 
+                            className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                          />
+                        </div>
+                      </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -1111,8 +1134,21 @@ export default function ProducerDashboard() {
                     {affiliates.map((aff) => (
                       <tr key={aff.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/20 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="font-bold text-stone-900 dark:text-white text-sm">{aff.profiles?.email || 'Afiliado'}</div>
-                          <div className="text-[10px] text-stone-400">{aff.affiliate_id.substring(0, 8)}</div>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold overflow-hidden border border-stone-100 dark:border-stone-800">
+                              {aff.profiles?.avatar_url ? (
+                                <img src={aff.profiles.avatar_url} alt="Affiliate" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                (aff.profiles?.full_name || aff.profiles?.email || 'A').charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-stone-900 dark:text-white text-sm">
+                                {aff.profiles?.full_name || aff.profiles?.email?.split('@')[0] || 'Afiliado'}
+                              </div>
+                              <div className="text-[10px] text-stone-400">{aff.profiles?.email}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-stone-600 dark:text-stone-400">
                           {aff.produtos?.name}
