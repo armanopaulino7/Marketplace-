@@ -964,6 +964,8 @@ export default function AdminDashboard() {
                       <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-2">
                         <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase rounded-lg">{product.category}</span>
                         <span className="px-2 py-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-[10px] font-bold uppercase rounded-lg">{product.subcategory}</span>
+                        {product.brand && <span className="px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase rounded-lg">Marca: {product.brand}</span>}
+                        {product.model && <span className="px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 text-[10px] font-bold uppercase rounded-lg">Modelo: {product.model}</span>}
                         <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase rounded-lg">Comissão: {product.commission_rate}%</span>
                       </div>
                     </div>

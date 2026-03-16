@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS public.produtos (
   quantity INTEGER DEFAULT 0,
   category TEXT,
   subcategory TEXT,
+  brand TEXT,
+  model TEXT,
   commission_rate DECIMAL(5,2) DEFAULT 10.00,
   pickup_address TEXT,
   phone1 TEXT,

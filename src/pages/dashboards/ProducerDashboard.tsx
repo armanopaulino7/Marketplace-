@@ -57,6 +57,8 @@ export default function ProducerDashboard() {
     price: '',
     category: '',
     subcategory: '',
+    brand: '',
+    model: '',
     commission_rate: '10',
     pickup_address: '',
     phone1: '',
@@ -451,6 +453,8 @@ export default function ProducerDashboard() {
           price: parseFloat(formData.price),
           category: formData.category,
           subcategory: formData.subcategory,
+          brand: formData.brand,
+          model: formData.model,
           commission_rate: parseFloat(formData.commission_rate),
           pickup_address: formData.pickup_address,
           phone1: formData.phone1,
@@ -471,6 +475,8 @@ export default function ProducerDashboard() {
         price: '',
         category: '',
         subcategory: '',
+        brand: '',
+        model: '',
         commission_rate: '10',
         pickup_address: '',
         phone1: '',
@@ -851,6 +857,29 @@ export default function ProducerDashboard() {
                               <option key={sub} value={sub}>{sub}</option>
                             ))}
                           </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Marca (Opcional)</label>
+                          <input 
+                            type="text" 
+                            value={formData.brand}
+                            onChange={e => setFormData({...formData, brand: e.target.value})}
+                            placeholder="Ex: Nike, Samsung, Apple" 
+                            className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Modelo (Opcional)</label>
+                          <input 
+                            type="text" 
+                            value={formData.model}
+                            onChange={e => setFormData({...formData, model: e.target.value})}
+                            placeholder="Ex: Air Max, Galaxy S21, iPhone 13" 
+                            className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                          />
                         </div>
                       </div>
 
