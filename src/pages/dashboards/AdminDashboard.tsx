@@ -14,12 +14,14 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Package,
+  ShoppingBag,
   AlertCircle,
   CheckCircle2,
   Camera,
   Search,
   ArrowRight,
-  LogOut
+  LogOut,
+  DollarSign
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -57,7 +59,8 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     users: 0,
-    sales: 0,
+    totalSales: 0,
+    platformRevenue: 0,
     pendingWithdrawals: 0,
     pendingProducts: 0
   });
@@ -248,16 +251,18 @@ export default function AdminDashboard() {
       const { count: pendingProdCount } = await supabase.from('produtos').select('*', { count: 'exact', head: true }).eq('status', 'pending');
       const { count: pendingWithCount } = await supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
       
-      // Fetch total sales (platform fees + delivery fees)
+      // Fetch total sales (GMV and platform revenue)
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('amount, delivery_fee')
         .eq('status', 'completed');
       
       let totalSales = 0;
+      let platformRevenue = 0;
       if (!ordersError && orders) {
-        // Platform fee is 10% of (total - delivery_fee)
-        totalSales = orders.reduce((acc, order) => {
+        totalSales = orders.reduce((acc, order) => acc + order.amount, 0);
+        // Platform revenue is platform fees + delivery fees
+        platformRevenue = orders.reduce((acc, order) => {
           const productPrice = order.amount - (order.delivery_fee || 0);
           const platformFee = productPrice * 0.10;
           return acc + platformFee + (order.delivery_fee || 0);
@@ -266,7 +271,8 @@ export default function AdminDashboard() {
       
       setStats({
         users: usersCount || 0,
-        sales: totalSales,
+        totalSales: totalSales,
+        platformRevenue: platformRevenue,
         pendingWithdrawals: pendingWithCount || 0,
         pendingProducts: pendingProdCount || 0
       });
@@ -631,10 +637,11 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {[
                 { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400', trend: '+12%', trendUp: true },
-                { label: 'Vendas Mensais', value: `${stats.sales.toLocaleString()} Kz`, icon: BarChart3, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', trend: '+8%', trendUp: true },
+                { label: 'Vendas Totais (GMV)', value: `${stats.totalSales.toLocaleString()} Kz`, icon: ShoppingBag, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400', trend: '+15%', trendUp: true },
+                { label: 'Faturamento Plataforma', value: `${stats.platformRevenue.toLocaleString()} Kz`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', trend: '+8%', trendUp: true },
                 { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400', trend: '-2%', trendUp: false },
                 { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400', trend: '+5', trendUp: true },
               ].map((stat, i) => (

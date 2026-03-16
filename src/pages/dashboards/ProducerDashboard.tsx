@@ -91,6 +91,7 @@ export default function ProducerDashboard() {
     'Livros': ['Literatura', 'Didáticos', 'Autoajuda', 'Infantil', 'Técnicos'],
     'Outros': ['Artesanato', 'Papelaria', 'Pet Shop', 'Ferramentas']
   };
+
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [affiliates, setAffiliates] = useState<any[]>([]);
@@ -1025,20 +1026,42 @@ export default function ProducerDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-stone-700 dark:text-stone-300 mb-1">Comissão Afiliado (%) *</label>
-                      <div className="flex items-center gap-3">
-                        <input 
-                          required
-                          type="range" 
-                          min="0"
-                          max="50"
-                          value={formData.commission_rate}
-                          onChange={e => setFormData({...formData, commission_rate: e.target.value})}
-                          className="flex-1 h-2 bg-stone-100 dark:bg-stone-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                        />
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400 min-w-[3rem] text-right">{formData.commission_rate}%</span>
-                      </div>
+                      <input 
+                        required
+                        type="number" 
+                        min="0"
+                        max="50"
+                        value={formData.commission_rate}
+                        onChange={e => setFormData({...formData, commission_rate: e.target.value})}
+                        placeholder="Ex: 10"
+                        className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                      />
                       <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1 italic">Máximo permitido: 50%</p>
                     </div>
+
+                    {formData.price && (
+                      <div className="mt-6 p-5 bg-stone-50 dark:bg-stone-800/50 rounded-3xl border border-stone-100 dark:border-stone-800 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <h3 className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2">Resumo de Ganhos</h3>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-stone-500 dark:text-stone-400">Preço do Produto:</span>
+                          <span className="font-bold text-stone-900 dark:text-white">{Number(formData.price).toLocaleString()} Kz</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-stone-500 dark:text-stone-400">Taxa da Plataforma (10%):</span>
+                          <span className="font-bold text-rose-500">-{ (Number(formData.price) * 0.1).toLocaleString() } Kz</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-stone-500 dark:text-stone-400">Comissão Afiliado ({formData.commission_rate}%):</span>
+                          <span className="font-bold text-rose-500">-{ (Number(formData.price) * (Number(formData.commission_rate) / 100)).toLocaleString() } Kz</span>
+                        </div>
+                        <div className="pt-3 border-t border-stone-200 dark:border-stone-700 flex justify-between items-center">
+                          <span className="text-sm font-bold text-stone-900 dark:text-white">Você Receberá:</span>
+                          <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                            { (Number(formData.price) - (Number(formData.price) * 0.1) - (Number(formData.price) * (Number(formData.commission_rate) / 100))).toLocaleString() } Kz
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
