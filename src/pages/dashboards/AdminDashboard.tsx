@@ -843,7 +843,7 @@ export default function AdminDashboard() {
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {['Design', 'Marketing', 'Programação', 'Negócios'].map((cat, i) => (
+                {['Moda', 'Eletrônicos', 'Casa', 'Beleza'].map((cat, i) => (
                   <button 
                     key={i} 
                     onClick={() => setSearchTerm(cat)}
