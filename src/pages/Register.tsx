@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ShoppingBag, Mail, Lock, AlertCircle, Loader2, User, UserPlus, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { UserRole } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -16,6 +17,19 @@ export default function Register() {
   const [adminExists, setAdminExists] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const queryParams = new URLSearchParams(window.location.search);
+  const redirectPath = queryParams.get('redirect');
+
+  useEffect(() => {
+    if (user && profile) {
+      if (redirectPath) {
+        navigate(decodeURIComponent(redirectPath), { replace: true });
+      } else {
+        navigate(`/dashboard/${profile.role}`);
+      }
+    }
+  }, [user, profile, navigate, redirectPath]);
 
   useEffect(() => {
     checkAdminExistence();
@@ -68,10 +82,18 @@ export default function Register() {
       // If email confirmation is required, the user might not be logged in yet.
       // We'll show a success message or redirect.
       if (authData.session) {
-        navigate(`/dashboard/${role}`);
+        if (redirectPath) {
+          navigate(decodeURIComponent(redirectPath), { replace: true });
+        } else {
+          navigate(`/dashboard/${role}`);
+        }
       } else {
         alert('Conta criada com sucesso! Por favor, verifique seu e-mail para confirmar a conta (se a confirmação estiver ativada).');
-        navigate('/login');
+        if (redirectPath) {
+          navigate(`/login?redirect=${encodeURIComponent(redirectPath)}`);
+        } else {
+          navigate('/login');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Erro ao criar conta. Tente novamente.');
@@ -287,7 +309,7 @@ export default function Register() {
           <div className="mt-6 text-center">
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Já tem uma conta?{' '}
-              <Link to="/login" className="font-bold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+              <Link to={redirectPath ? `/login?redirect=${encodeURIComponent(redirectPath)}` : "/login"} className="font-bold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
                 Fazer login
               </Link>
             </p>

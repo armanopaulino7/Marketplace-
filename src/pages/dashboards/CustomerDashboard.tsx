@@ -27,7 +27,8 @@ import {
   Bar
 } from 'recharts';
 import { supabase } from '../../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { cn } from '../../lib/utils';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
@@ -35,7 +36,9 @@ import ChangePasswordForm from '../../components/ChangePasswordForm';
 export default function CustomerDashboard() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'dashboard';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [products, setProducts] = useState<any[]>([]);
   const [myOrders, setMyOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -438,7 +441,17 @@ export default function CustomerDashboard() {
                           <div className="font-bold text-stone-900">Pedido #{order.id.substring(0, 8).toUpperCase()}</div>
                           <p className="text-sm text-stone-500">{order.produtos?.name} • {new Date(order.created_at).toLocaleDateString()}</p>
                           <div className="mt-1 flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded uppercase">{order.status}</span>
+                            <span className={cn(
+                              "px-2 py-0.5 text-[10px] font-bold rounded uppercase",
+                              order.status === 'completed' ? "bg-emerald-50 text-emerald-600" :
+                              order.status === 'cancelled' ? "bg-rose-50 text-rose-600" :
+                              "bg-amber-50 text-amber-600"
+                            )}>
+                              {order.status === 'pending' ? 'Pendente' :
+                               order.status === 'processing' ? 'Em Processamento' :
+                               order.status === 'completed' ? 'Concluído' :
+                               order.status === 'cancelled' ? 'Cancelado' : order.status}
+                            </span>
                             <span className="text-[10px] text-stone-400 font-bold">{order.amount.toLocaleString()} Kz</span>
                           </div>
                         </div>

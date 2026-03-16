@@ -114,7 +114,8 @@ export default function Checkout() {
 
   const handlePurchase = async () => {
     if (!user) {
-      navigate('/login');
+      const currentPath = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/login?redirect=${currentPath}`);
       return;
     }
 

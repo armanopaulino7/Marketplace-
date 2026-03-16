@@ -12,12 +12,18 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user, profile, clearSession } = useAuth();
+  const queryParams = new URLSearchParams(window.location.search);
+  const redirectPath = queryParams.get('redirect');
 
   useEffect(() => {
     if (user && profile) {
-      navigate(`/dashboard/${profile.role}`);
+      if (redirectPath) {
+        navigate(decodeURIComponent(redirectPath), { replace: true });
+      } else {
+        navigate(`/dashboard/${profile.role}`);
+      }
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, navigate, redirectPath]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -99,9 +105,11 @@ export default function Login() {
       
       console.log('Profile found, role:', profileData.role);
       
-      // Force a small delay to ensure context updates or just navigate directly
-      // since we already have the role here.
-      navigate(`/dashboard/${profileData.role}`, { replace: true });
+      if (redirectPath) {
+        navigate(decodeURIComponent(redirectPath), { replace: true });
+      } else {
+        navigate(`/dashboard/${profileData.role}`, { replace: true });
+      }
       
     } catch (err: any) {
       console.error('Login catch block:', err);
@@ -231,7 +239,7 @@ export default function Login() {
 
             <div className="mt-6">
               <Link
-                to="/register"
+                to={redirectPath ? `/register?redirect=${encodeURIComponent(redirectPath)}` : "/register"}
                 className="w-full flex justify-center py-3.5 px-4 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-sm text-sm font-bold text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 transition-all"
               >
                 Criar nova conta
