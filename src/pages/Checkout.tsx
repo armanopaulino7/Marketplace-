@@ -31,6 +31,7 @@ export default function Checkout() {
   const [deliveryDate, setDeliveryDate] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('IBAN');
   const ref = searchParams.get('ref');
+  const qty = parseInt(searchParams.get('qty') || '1');
 
   const [adminProfile, setAdminProfile] = useState<any>(null);
 
@@ -145,12 +146,12 @@ export default function Checkout() {
         return;
       }
 
-      const price = Number(product.price);
+      const subtotal = Number(product.price) * qty;
       const platformFeeRate = 0.10; // 10% platform fee
-      const platformFee = price * platformFeeRate;
-      const affiliateCommission = ref ? (price * (Number(product.commission_rate) / 100)) : 0;
-      const producerAmount = price - affiliateCommission - platformFee;
-      const totalOrderAmount = price + Number(selectedFee);
+      const platformFee = subtotal * platformFeeRate;
+      const affiliateCommission = ref ? (subtotal * (Number(product.commission_rate) / 100)) : 0;
+      const producerAmount = subtotal - affiliateCommission - platformFee;
+      const totalOrderAmount = subtotal + Number(selectedFee);
 
       // 1. Create Order
       const { data: order, error: orderError } = await supabase
@@ -181,7 +182,7 @@ export default function Checkout() {
       // 2. Decrement Product Quantity
       const { error: updateError } = await supabase
         .from('produtos')
-        .update({ quantity: Math.max(0, product.quantity - 1) })
+        .update({ quantity: Math.max(0, product.quantity - qty) })
         .eq('id', product.id);
 
       if (updateError) console.error('Error updating product quantity:', updateError);
@@ -409,14 +410,14 @@ export default function Checkout() {
                 </div>
                 <div>
                   <h3 className="font-bold text-stone-900 dark:text-white line-clamp-2">{product.name}</h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{product.category}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{product.category} • Qtd: {qty}</p>
                 </div>
               </div>
 
               <div className="space-y-3 pt-6 border-t border-stone-100 dark:border-stone-800">
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500 dark:text-stone-400">Subtotal</span>
-                  <span className="font-bold text-stone-900 dark:text-white">{product.price.toLocaleString()} Kz</span>
+                  <span className="text-stone-500 dark:text-stone-400">Subtotal ({qty}x)</span>
+                  <span className="font-bold text-stone-900 dark:text-white">{(product.price * qty).toLocaleString()} Kz</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-500 dark:text-stone-400">Taxa de Entrega</span>
@@ -426,7 +427,7 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between text-lg pt-3 border-t border-stone-100 dark:border-stone-800">
                   <span className="font-black text-stone-900 dark:text-white">Total</span>
-                  <span className="font-black text-indigo-600 dark:text-indigo-400">{(product.price + selectedFee).toLocaleString()} Kz</span>
+                  <span className="font-black text-indigo-600 dark:text-indigo-400">{(product.price * qty + selectedFee).toLocaleString()} Kz</span>
                 </div>
               </div>
 

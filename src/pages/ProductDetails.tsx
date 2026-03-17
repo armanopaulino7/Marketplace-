@@ -81,7 +81,9 @@ export default function ProductDetails() {
 
   const handleQuantityChange = (type: 'inc' | 'dec') => {
     if (type === 'inc') {
-      setQuantity(prev => prev + 1);
+      if (product && quantity < product.quantity) {
+        setQuantity(prev => prev + 1);
+      }
     } else if (type === 'dec' && quantity > 1) {
       setQuantity(prev => prev - 1);
     }
@@ -197,7 +199,7 @@ export default function ProductDetails() {
                   {product.price.toLocaleString()} KZ
                 </div>
                 <div className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-lg">
-                  Em estoque
+                  {product.quantity > 0 ? `Em estoque (${product.quantity})` : 'Esgotado'}
                 </div>
               </div>
             </div>
@@ -253,8 +255,14 @@ export default function ProductDetails() {
 
               <div className="pt-4 space-y-3">
                 <button 
-                  onClick={() => navigate(`/checkout/${product.id}${ref ? `?ref=${ref}` : ''}`)}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group"
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    if (ref) params.set('ref', ref);
+                    params.set('qty', quantity.toString());
+                    navigate(`/checkout/${product.id}?${params.toString()}`);
+                  }}
+                  disabled={product.quantity <= 0}
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group disabled:opacity-50"
                 >
                   <ShoppingBag className="h-6 w-6 group-hover:scale-110 transition-transform" />
                   Finalizar Compra

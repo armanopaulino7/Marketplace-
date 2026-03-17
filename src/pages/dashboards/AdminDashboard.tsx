@@ -62,7 +62,9 @@ export default function AdminDashboard() {
     totalSales: 0,
     platformRevenue: 0,
     pendingWithdrawals: 0,
-    pendingProducts: 0
+    pendingProducts: 0,
+    totalPlatformFees: 0,
+    totalWithdrawalFees: 0
   });
   const [salesHistory, setSalesHistory] = useState<any[]>([]);
 
@@ -254,27 +256,39 @@ export default function AdminDashboard() {
       // Fetch total sales (GMV and platform revenue)
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('amount, delivery_fee')
+        .select('amount, delivery_fee, platform_fee')
         .eq('status', 'completed');
       
       let totalSales = 0;
       let platformRevenue = 0;
+      let totalPlatformFees = 0;
       if (!ordersError && orders) {
         totalSales = orders.reduce((acc, order) => acc + order.amount, 0);
+        totalPlatformFees = orders.reduce((acc, order) => acc + (order.platform_fee || 0), 0);
         // Platform revenue is platform fees + delivery fees
         platformRevenue = orders.reduce((acc, order) => {
-          const productPrice = order.amount - (order.delivery_fee || 0);
-          const platformFee = productPrice * 0.10;
-          return acc + platformFee + (order.delivery_fee || 0);
+          return acc + (order.platform_fee || 0) + (order.delivery_fee || 0);
         }, 0);
       }
+
+      // Fetch withdrawal fees (200kz)
+      const { data: approvedWithdrawals } = await supabase
+        .from('withdrawal_requests')
+        .select('details')
+        .eq('status', 'approved');
+      
+      const totalWithdrawalFees = (approvedWithdrawals || []).reduce((acc, w) => {
+        return acc + (w.details?.fee || 0);
+      }, 0);
       
       setStats({
         users: usersCount || 0,
         totalSales: totalSales,
-        platformRevenue: platformRevenue,
+        platformRevenue: platformRevenue + totalWithdrawalFees,
         pendingWithdrawals: pendingWithCount || 0,
-        pendingProducts: pendingProdCount || 0
+        pendingProducts: pendingProdCount || 0,
+        totalPlatformFees,
+        totalWithdrawalFees
       });
 
       // Generate sales history for the last 7 days
@@ -521,6 +535,17 @@ export default function AdminDashboard() {
         });
         
         if (walletUpdateError) throw walletUpdateError;
+
+        // Credit admin with fee if applicable
+        const fee = withdrawal.details?.fee || 0;
+        if (fee > 0 && user) {
+          await supabase.rpc('process_sale_funds', {
+            user_id_param: user.id,
+            amount_param: fee,
+            description_param: `Taxa de saque (200kz): ${withdrawalId}`,
+            days_to_release: 0
+          });
+        }
       }
 
       const { error } = await supabase
@@ -637,22 +662,20 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[
-                { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400', trend: '+12%', trendUp: true },
-                { label: 'Vendas Totais (GMV)', value: `${stats.totalSales.toLocaleString()} Kz`, icon: ShoppingBag, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400', trend: '+15%', trendUp: true },
-                { label: 'Faturamento Plataforma', value: `${stats.platformRevenue.toLocaleString()} Kz`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', trend: '+8%', trendUp: true },
-                { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400', trend: '-2%', trendUp: false },
-                { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400', trend: '+5', trendUp: true },
+                { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' },
+                { label: 'Vendas Totais (GMV)', value: `${stats.totalSales.toLocaleString()} Kz`, icon: ShoppingBag, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
+                { label: 'Faturamento Plataforma', value: `${stats.platformRevenue.toLocaleString()} Kz`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
+                { label: 'Taxas 10% (Vendas)', value: `${stats.totalPlatformFees.toLocaleString()} Kz`, icon: Package, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
+                { label: 'Taxas 200kz (Saques)', value: `${stats.totalWithdrawalFees.toLocaleString()} Kz`, icon: Wallet, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+                { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' },
+                { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <div className={`p-3 rounded-2xl ${stat.color}`}>
                       <stat.icon className="h-6 w-6" />
-                    </div>
-                    <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${stat.trendUp ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'}`}>
-                      {stat.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                      {stat.trend}
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-stone-900 dark:text-white">{stat.value}</div>
