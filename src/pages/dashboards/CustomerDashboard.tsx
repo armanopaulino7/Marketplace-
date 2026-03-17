@@ -32,6 +32,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
+import { Wishlist } from '../../components/Wishlist';
+import { ChatSystem } from '../../components/ChatSystem';
 
 export default function CustomerDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -470,6 +472,20 @@ export default function CustomerDashboard() {
                 )}
               </div>
             </div>
+          </div>
+        );
+      case 'favoritos':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Seus Favoritos</h1>
+            <Wishlist />
+          </div>
+        );
+      case 'mensagens':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Mensagens</h1>
+            <ChatSystem />
           </div>
         );
       case 'perfil':

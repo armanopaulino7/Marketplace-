@@ -17,12 +17,20 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  Heart,
+  Trophy,
+  Ticket,
+  FileText,
+  ShieldAlert,
+  History,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { NotificationBell } from './NotificationBell';
 
 interface MenuItem {
   id: string;
@@ -59,6 +67,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'aprovacao-produtos', label: 'Aprovação de Produtos', icon: CheckSquare },
           { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users },
           { id: 'taxas-entrega', label: 'Taxas de Entrega', icon: Truck },
+          { id: 'denuncias', label: 'Denúncias', icon: ShieldAlert },
+          { id: 'auditoria', label: 'Auditoria', icon: History },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
       case 'producer':
@@ -69,6 +79,10 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'cadastrar-produto', label: 'Cadastrar Produto', icon: PlusCircle },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
           { id: 'afiliados', label: 'Afiliados', icon: Users },
+          { id: 'cupons', label: 'Cupons', icon: Ticket },
+          { id: 'materiais', label: 'Materiais de Apoio', icon: FileText },
+          { id: 'ranking', label: 'Ranking Afiliados', icon: Trophy },
+          { id: 'mensagens', label: 'Mensagens', icon: MessageSquare },
           { id: 'carteira', label: 'Carteira', icon: Wallet },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
@@ -80,6 +94,9 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'afiliar-me', label: 'Afiliar-me', icon: UserPlus },
           { id: 'sou-afiliado', label: 'Sou Afiliado', icon: LinkIcon },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
+          { id: 'materiais', label: 'Materiais de Apoio', icon: FileText },
+          { id: 'ranking', label: 'Ranking', icon: Trophy },
+          { id: 'mensagens', label: 'Mensagens', icon: MessageSquare },
           { id: 'carteira', label: 'Carteira', icon: Wallet },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
@@ -89,6 +106,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
+          { id: 'favoritos', label: 'Favoritos', icon: Heart },
+          { id: 'mensagens', label: 'Mensagens', icon: MessageSquare },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
       default:
@@ -107,6 +126,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           <span className="font-bold text-lg text-stone-900 dark:text-white">CashLuanda</span>
         </div>
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <button 
             type="button"
             onClick={(e) => {
@@ -147,18 +167,21 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
               <ShoppingBag className="h-6 w-6 text-indigo-600" />
               <span className="font-bold text-xl text-stone-900 dark:text-white">CashLuanda</span>
             </div>
-            <button 
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleTheme();
-              }}
-              className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleTheme();
+                }}
+                className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">

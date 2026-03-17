@@ -24,29 +24,89 @@ import {
   ChevronLeft,
   Facebook,
   Instagram,
-  Twitter
+  Twitter,
+  Heart,
+  Flag,
+  Check,
+  X
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { ReviewSection } from '../components/ReviewSection';
+import { cn } from '../lib/utils';
 
 export default function ProductDetails() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] = useState<Record<string, string>>({});
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [showReportModal, setShowReportModal] = useState(false);
   const ref = searchParams.get('ref');
 
   useEffect(() => {
     fetchProduct();
-  }, [id]);
+    if (user) checkWishlist();
+  }, [id, user]);
+
+  const checkWishlist = async () => {
+    const { data } = await supabase
+      .from('wishlist')
+      .select('id')
+      .eq('user_id', user?.id)
+      .eq('product_id', id)
+      .single();
+    
+    if (data) setIsWishlisted(true);
+  };
+
+  const toggleWishlist = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (isWishlisted) {
+      await supabase.from('wishlist').delete().eq('user_id', user.id).eq('product_id', id);
+      setIsWishlisted(false);
+    } else {
+      await supabase.from('wishlist').insert({ user_id: user.id, product_id: id });
+      setIsWishlisted(true);
+    }
+  };
+
+  const handleReport = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    setIsReporting(true);
+    const { error } = await supabase.from('product_reports').insert({
+      reporter_id: user.id,
+      product_id: id,
+      reason: reportReason
+    });
+
+    if (!error) {
+      setShowReportModal(false);
+      setReportReason('');
+      alert('Denúncia enviada com sucesso. Nossa equipe irá analisar.');
+    }
+    setIsReporting(false);
+  };
 
   const fetchProduct = async () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('produtos')
-        .select('*, profiles(email, full_name, avatar_url)')
+        .select('*, profiles!produtos_producer_id_fkey(email, full_name, avatar_url, is_verified)')
         .eq('id', id)
         .single();
 
@@ -164,15 +224,57 @@ export default function ProductDetails() {
           {/* Right Column: Info */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full uppercase tracking-widest">
-                  {product.category || 'Geral'}
-                </span>
-                <div className="flex items-center gap-1 text-amber-400">
-                  <Star className="h-4 w-4 fill-current" />
-                  <span className="text-sm font-bold text-stone-900 dark:text-white">4.8</span>
-                  <span className="text-xs text-stone-400 font-medium">(124 avaliações)</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="px-4 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full uppercase tracking-widest">
+                    {product.category || 'Geral'}
+                  </span>
+                  <div className="flex items-center gap-1 text-amber-400">
+                    <Star className="h-4 w-4 fill-current" />
+                    <span className="text-sm font-bold text-stone-900 dark:text-white">4.8</span>
+                    <span className="text-xs text-stone-400 font-medium">(124 avaliações)</span>
+                  </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={toggleWishlist}
+                    className={cn(
+                      "p-3 rounded-2xl transition-all shadow-sm border",
+                      isWishlisted 
+                        ? "bg-rose-50 border-rose-100 text-rose-600 dark:bg-rose-900/20 dark:border-rose-900/30" 
+                        : "bg-white border-stone-100 text-stone-400 hover:text-rose-600 dark:bg-stone-900 dark:border-stone-800"
+                    )}
+                  >
+                    <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
+                  </button>
+                  <button 
+                    onClick={() => setShowReportModal(true)}
+                    className="p-3 bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 rounded-2xl text-stone-400 hover:text-rose-600 transition-all shadow-sm"
+                  >
+                    <Flag className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                  {product.profiles?.avatar_url ? (
+                    <img src={product.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs font-bold">
+                      {product.profiles?.full_name?.[0] || 'V'}
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-bold text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
+                  Vendido por <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || 'Vendedor'}</span>
+                  {product.profiles?.is_verified && (
+                    <span className="flex items-center gap-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                      <ShieldCheck className="h-3 w-3" />
+                      Verificado
+                    </span>
+                  )}
+                </p>
               </div>
               
               <h1 className="text-4xl font-black text-stone-900 dark:text-white leading-tight">
@@ -309,7 +411,45 @@ export default function ProductDetails() {
             </div>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <ReviewSection productId={product.id} />
       </div>
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-stone-100 dark:border-stone-800 animate-in fade-in zoom-in duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
+                <Flag className="h-6 w-6 text-rose-500" />
+                Denunciar Produto
+              </h3>
+              <button onClick={() => setShowReportModal(false)} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors">
+                <X className="h-6 w-6 text-stone-400" />
+              </button>
+            </div>
+            <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">
+              Por que você está denunciando este produto? Nossa equipe irá analisar sua denúncia em até 24h.
+            </p>
+            <div className="space-y-4">
+              <textarea
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder="Descreva o motivo da denúncia..."
+                className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-rose-500 min-h-[120px]"
+              />
+              <button
+                onClick={handleReport}
+                disabled={isReporting || !reportReason}
+                className="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold hover:bg-rose-700 transition-all disabled:opacity-50"
+              >
+                {isReporting ? 'Enviando...' : 'Enviar Denúncia'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

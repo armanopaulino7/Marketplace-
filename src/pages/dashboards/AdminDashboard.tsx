@@ -41,6 +41,8 @@ import WalletCard from '../../components/WalletCard';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
+import { ProductReports } from '../../components/ProductReports';
+import { AuditLogs } from '../../components/AuditLogs';
 
 export default function AdminDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -1249,6 +1251,20 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+          </div>
+        );
+      case 'denuncias':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Denúncias de Produtos</h1>
+            <ProductReports />
+          </div>
+        );
+      case 'auditoria':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Logs de Auditoria</h1>
+            <AuditLogs />
           </div>
         );
       case 'perfil':

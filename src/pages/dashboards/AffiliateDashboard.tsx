@@ -40,6 +40,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
+import { SupportMaterials } from '../../components/SupportMaterials';
+import { AffiliateRanking } from '../../components/AffiliateRanking';
+import { ChatSystem } from '../../components/ChatSystem';
 
 export default function AffiliateDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -661,6 +664,27 @@ export default function AffiliateDashboard() {
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Sua Carteira</h1>
             <WalletCard />
+          </div>
+        );
+      case 'materiais':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Materiais de Apoio</h1>
+            <SupportMaterials mode="affiliate" />
+          </div>
+        );
+      case 'ranking':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Ranking de Afiliados</h1>
+            <AffiliateRanking />
+          </div>
+        );
+      case 'mensagens':
+        return (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Mensagens</h1>
+            <ChatSystem />
           </div>
         );
       case 'pedidos':

@@ -38,6 +38,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
+import { CouponManager } from '../../components/CouponManager';
+import { SupportMaterials } from '../../components/SupportMaterials';
+import { AffiliateRanking } from '../../components/AffiliateRanking';
+import { ChatSystem } from '../../components/ChatSystem';
 
 export default function ProducerDashboard() {
   const { user, profile, signOut } = useAuth();
@@ -685,6 +689,14 @@ export default function ProducerDashboard() {
             </div>
           </div>
         );
+      case 'cupons':
+        return <CouponManager />;
+      case 'materiais':
+        return <SupportMaterials mode="producer" />;
+      case 'ranking':
+        return <AffiliateRanking />;
+      case 'mensagens':
+        return <ChatSystem />;
       case 'home':
         const filteredProducts = products.filter(p => 
           p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
