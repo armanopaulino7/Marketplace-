@@ -41,6 +41,15 @@ export default function Checkout() {
     fetchAdminProfile();
   }, [id]);
 
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        navigate('/dashboard/cliente');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, navigate]);
+
   const fetchAdminProfile = async () => {
     try {
       const { data, error } = await supabase
@@ -172,6 +181,7 @@ export default function Checkout() {
           commission_amount: affiliateCommission,
           producer_commission: producerAmount,
           platform_fee: platformFee,
+          quantity: qty,
           status: 'pending'
         })
         .select()
@@ -179,13 +189,23 @@ export default function Checkout() {
 
       if (orderError) throw orderError;
       
-      // 2. Decrement Product Quantity
+      // 2. Decrement Product Quantity (Atomic)
       const { error: updateError } = await supabase
-        .from('produtos')
-        .update({ quantity: Math.max(0, product.quantity - qty) })
-        .eq('id', product.id);
+        .rpc('decrement_product_stock', {
+          product_id_param: product.id,
+          amount_param: qty
+        });
 
-      if (updateError) console.error('Error updating product quantity:', updateError);
+      if (updateError) {
+        console.error('Error updating product quantity:', updateError);
+        // If the RPC fails (e.g. not found), fallback to the old method but with a check
+        // Or just inform the user. The RPC is safer.
+        if (updateError.message?.includes('insuficiente')) {
+          alert('Desculpe, o estoque deste produto acabou enquanto você finalizava a compra.');
+          setProcessing(false);
+          return;
+        }
+      }
 
       // Funds will be processed by the admin when the order is marked as 'completed'
       // in the Admin Dashboard. This ensures balances only update after confirmation.
@@ -215,16 +235,16 @@ export default function Checkout() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-12 text-center border border-stone-200 shadow-xl space-y-6">
-          <div className="h-20 w-20 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto">
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-[2.5rem] p-12 text-center border border-stone-200 dark:border-stone-800 shadow-xl space-y-6">
+          <div className="h-20 w-20 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-3xl flex items-center justify-center mx-auto">
             <CheckCircle2 className="h-12 w-12" />
           </div>
-          <h1 className="text-3xl font-black text-stone-900">Compra Realizada!</h1>
-          <p className="text-stone-500">Seu pedido foi processado com sucesso. Você já pode acessar seu produto no seu painel.</p>
+          <h1 className="text-3xl font-black text-stone-900 dark:text-white">Compra Realizada!</h1>
+          <p className="text-stone-500 dark:text-stone-400">Seu pedido foi processado com sucesso. Você será redirecionado para seus pedidos em instantes.</p>
           <button 
             onClick={() => navigate('/dashboard/cliente')}
-            className="w-full py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-all"
+            className="w-full py-4 bg-stone-900 dark:bg-stone-800 text-white rounded-2xl font-bold hover:bg-stone-800 dark:hover:bg-stone-700 transition-all"
           >
             Ir para Meus Pedidos
           </button>

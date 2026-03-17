@@ -691,7 +691,9 @@ export default function AffiliateDashboard() {
                                 <Package className="h-5 w-5 m-2.5 text-stone-300" />
                               )}
                             </div>
-                            <span className="font-bold text-stone-900 dark:text-white text-sm">{order.produtos?.name}</span>
+                            <span className="font-bold text-stone-900 dark:text-white text-sm">
+                              {order.produtos?.name} {order.quantity > 1 && `(x${order.quantity})`}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-stone-600 dark:text-stone-400">{order.amount.toLocaleString()} Kz</td>

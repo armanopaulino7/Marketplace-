@@ -439,7 +439,9 @@ export default function CustomerDashboard() {
                         </div>
                         <div>
                           <div className="font-bold text-stone-900">Pedido #{order.id.substring(0, 8).toUpperCase()}</div>
-                          <p className="text-sm text-stone-500">{order.produtos?.name} • {new Date(order.created_at).toLocaleDateString()}</p>
+                          <p className="text-sm text-stone-500">
+                            {order.produtos?.name} • Qtd: {order.quantity || 1} • {new Date(order.created_at).toLocaleDateString()}
+                          </p>
                           <div className="mt-1 flex items-center gap-2">
                             <span className={cn(
                               "px-2 py-0.5 text-[10px] font-bold rounded uppercase",

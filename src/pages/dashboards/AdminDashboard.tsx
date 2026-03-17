@@ -804,7 +804,9 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <div className="font-bold text-stone-900 dark:text-white text-sm">{order.produtos?.name}</div>
-                              <div className="text-[10px] text-stone-400">Entrega: {new Date(order.delivery_date).toLocaleDateString()}</div>
+                              <div className="text-[10px] text-stone-400">
+                                Qtd: {order.quantity || 1} • Entrega: {new Date(order.delivery_date).toLocaleDateString()}
+                              </div>
                             </div>
                           </div>
                         </td>

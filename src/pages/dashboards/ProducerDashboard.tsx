@@ -1139,7 +1139,9 @@ export default function ProducerDashboard() {
                         </div>
                         <div>
                           <div className="font-bold text-stone-900 dark:text-white">Pedido #{sale.id.substring(0, 8).toUpperCase()}</div>
-                          <div className="text-sm text-stone-500 dark:text-stone-400">{sale.produtos?.name} • {new Date(sale.created_at).toLocaleDateString()}</div>
+                          <div className="text-sm text-stone-500 dark:text-stone-400">
+                            {sale.produtos?.name} • Qtd: {sale.quantity || 1} • {new Date(sale.created_at).toLocaleDateString()}
+                          </div>
                           <div className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider mt-1">
                             {sale.neighborhood} • Entrega: {new Date(sale.delivery_date).toLocaleDateString()}
                           </div>
