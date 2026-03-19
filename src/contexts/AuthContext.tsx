@@ -18,6 +18,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const updateLastSeen = async (userId: string) => {
+    try {
+      await supabase
+        .from('profiles')
+        .update({ last_seen: new Date().toISOString() })
+        .eq('id', userId);
+    } catch (error) {
+      console.error('Error updating last_seen:', error);
+    }
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (user) {
+      // Update immediately on login
+      updateLastSeen(user.id);
+      
+      // Update every 2 minutes
+      interval = setInterval(() => {
+        updateLastSeen(user.id);
+      }, 120000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [user]);
+
   const clearSession = () => {
     console.warn('Clearing auth session manually...');
     Object.keys(localStorage).forEach(key => {

@@ -5,7 +5,9 @@ export interface Profile {
   email: string;
   role: UserRole;
   avatar_url?: string;
+  full_name?: string;
   phone?: string;
   phone2?: string;
   created_at: string;
+  last_seen?: string;
 }

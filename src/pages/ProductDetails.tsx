@@ -33,7 +33,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { ReviewSection } from '../components/ReviewSection';
-import { cn } from '../lib/utils';
+import { cn, isOnline } from '../lib/utils';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -132,7 +132,8 @@ export default function ProductDetails() {
             email,
             full_name,
             avatar_url,
-            is_verified
+            is_verified,
+            last_seen
           )
         `)
         .eq('id', id)
@@ -156,7 +157,7 @@ export default function ProductDetails() {
             console.log('Product found without join, fetching profile separately for producer_id:', fallbackData.producer_id);
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
-              .select('id, email, full_name, avatar_url, is_verified')
+              .select('id, email, full_name, avatar_url, is_verified, last_seen')
               .eq('id', fallbackData.producer_id)
               .single();
             
@@ -333,6 +334,17 @@ export default function ProductDetails() {
                     <span className="flex items-center gap-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
                       <ShieldCheck className="h-3 w-3" />
                       Verificado
+                    </span>
+                  )}
+                  {isOnline(product.profiles?.last_seen) ? (
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-2">
+                      <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                      Online
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-2">
+                      <div className="h-2 w-2 bg-stone-300 dark:bg-stone-700 rounded-full" />
+                      Offline
                     </span>
                   )}
                 </p>

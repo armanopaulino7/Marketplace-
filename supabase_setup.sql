@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   platform_bank_details JSONB DEFAULT '{}',
   private_bank_details JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_seen TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 1.1 FUNCTION TO CHECK IF USER IS ADMIN (Uses JWT metadata to avoid recursion)

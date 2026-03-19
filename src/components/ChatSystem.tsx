@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { MessageSquare, Send, X, Search, User, Check, CheckCheck, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { cn } from '../lib/utils';
+import { cn, isOnline } from '../lib/utils';
 import { format } from 'date-fns';
 
 interface Message {
@@ -19,6 +19,7 @@ interface Contact {
   full_name: string;
   email: string;
   avatar_url: string;
+  last_seen?: string;
   last_message?: string;
   last_message_time?: string;
   unread_count: number;
@@ -42,8 +43,15 @@ export function ChatSystem() {
       fetchContacts();
       fetchAllProfiles();
       const subscription = subscribeToMessages();
+      
+      // Refresh contacts every minute to update online status
+      const interval = setInterval(() => {
+        fetchContacts();
+      }, 60000);
+
       return () => {
         subscription.unsubscribe();
+        clearInterval(interval);
       };
     }
   }, [user]);
@@ -289,6 +297,9 @@ export function ChatSystem() {
                       </div>
                     )}
                   </div>
+                  {isOnline(contact.last_seen) && (
+                    <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-2 border-white dark:border-stone-900 shadow-sm" />
+                  )}
                   {contact.unread_count > 0 && (
                     <div className="absolute -top-1 -right-1 h-5 w-5 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-stone-900">
                       {contact.unread_count}
@@ -336,7 +347,11 @@ export function ChatSystem() {
                   <p className="font-bold text-stone-900 dark:text-white text-sm">
                     {selectedContact.full_name || selectedContact.email.split('@')[0]}
                   </p>
-                  <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Online</p>
+                  {isOnline(selectedContact.last_seen) ? (
+                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Online</p>
+                  ) : (
+                    <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Offline</p>
+                  )}
                 </div>
               </div>
             </div>
