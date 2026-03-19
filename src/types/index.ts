@@ -8,6 +8,9 @@ export interface Profile {
   full_name?: string;
   phone?: string;
   phone2?: string;
+  iban_private?: string;
+  bank_name_private?: string;
+  holder_name_private?: string;
   created_at: string;
   last_seen?: string;
 }

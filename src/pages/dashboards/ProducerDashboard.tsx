@@ -44,9 +44,21 @@ import { AffiliateRanking } from '../../components/AffiliateRanking';
 import { ChatSystem } from '../../components/ChatSystem';
 
 export default function ProducerDashboard() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [registrationForm, setRegistrationForm] = useState({
+    full_name: profile?.full_name || '',
+    phone: profile?.phone || '',
+    phone2: profile?.phone2 || ''
+  });
+  const [bankForm, setBankForm] = useState({
+    iban_private: profile?.iban_private || '',
+    bank_name_private: profile?.bank_name_private || '',
+    holder_name_private: profile?.holder_name_private || ''
+  });
   const [products, setProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -171,6 +183,59 @@ export default function ProducerDashboard() {
       }
     } catch (err) {
       console.error('Error fetching affiliates:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (profile) {
+      setRegistrationForm({
+        full_name: profile.full_name || '',
+        phone: profile.phone || '',
+        phone2: profile.phone2 || ''
+      });
+      setBankForm({
+        iban_private: profile.iban_private || '',
+        bank_name_private: profile.bank_name_private || '',
+        holder_name_private: profile.holder_name_private || ''
+      });
+    }
+  }, [profile]);
+
+  const handleUpdateRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(registrationForm)
+        .eq('id', user.id);
+
+      if (error) throw error;
+      await refreshProfile();
+      setShowRegistrationModal(false);
+    } catch (err: any) {
+      console.error('Error updating registration:', err);
+      alert('Erro ao atualizar dados: ' + err.message);
+    }
+  };
+
+  const handleUpdateBank = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(bankForm)
+        .eq('id', user.id);
+
+      if (error) throw error;
+      await refreshProfile();
+      setShowBankModal(false);
+    } catch (err: any) {
+      console.error('Error updating bank data:', err);
+      alert('Erro ao atualizar dados bancários: ' + err.message);
     }
   };
 
@@ -1366,7 +1431,7 @@ export default function ProducerDashboard() {
               </div>
               <div className="space-y-4">
                 <button 
-                  onClick={() => alert('Funcionalidade de edição de dados cadastrais em breve!')}
+                  onClick={() => setShowRegistrationModal(true)}
                   className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
                 >
                   <div className="flex items-center gap-3">
@@ -1376,11 +1441,14 @@ export default function ProducerDashboard() {
                   <ArrowUpRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
                 </button>
                 <button 
-                  onClick={() => alert('Funcionalidade de dados bancários em breve!')}
+                  onClick={() => setShowBankModal(true)}
                   className="w-full flex items-center justify-between p-4 border border-stone-200 dark:border-stone-800 rounded-2xl font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
                 >
-                  <Wallet className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-                  Dados Bancários
+                  <div className="flex items-center gap-3">
+                    <Wallet className="h-5 w-5 text-stone-400 dark:text-stone-500" />
+                    Dados Bancários
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-stone-300 dark:text-stone-600" />
                 </button>
               </div>
 
@@ -1398,6 +1466,115 @@ export default function ProducerDashboard() {
   return (
     <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
       {renderContent()}
+
+      {/* Modal Dados Cadastrais */}
+      {showRegistrationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-stone-200 dark:border-stone-800">
+            <div className="p-6 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-stone-900 dark:text-white">Dados Cadastrais</h3>
+              <button onClick={() => setShowRegistrationModal(false)} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors">
+                <X className="h-5 w-5 text-stone-400" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateRegistration} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Nome Completo</label>
+                <input
+                  type="text"
+                  value={registrationForm.full_name}
+                  onChange={(e) => setRegistrationForm({ ...registrationForm, full_name: e.target.value })}
+                  className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  placeholder="Seu nome completo"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Telefone Principal</label>
+                <input
+                  type="tel"
+                  value={registrationForm.phone}
+                  onChange={(e) => setRegistrationForm({ ...registrationForm, phone: e.target.value })}
+                  className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  placeholder="(00) 00000-0000"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Telefone Secundário (Opcional)</label>
+                <input
+                  type="tel"
+                  value={registrationForm.phone2}
+                  onChange={(e) => setRegistrationForm({ ...registrationForm, phone2: e.target.value })}
+                  className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all mt-4"
+              >
+                Salvar Alterações
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Dados Bancários */}
+      {showBankModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-stone-200 dark:border-stone-800">
+            <div className="p-6 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-stone-900 dark:text-white">Dados Bancários</h3>
+              <button onClick={() => setShowBankModal(false)} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors">
+                <X className="h-5 w-5 text-stone-400" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateBank} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">IBAN</label>
+                <input
+                  type="text"
+                  value={bankForm.iban_private}
+                  onChange={(e) => setBankForm({ ...bankForm, iban_private: e.target.value })}
+                  className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  placeholder="AO06..."
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Nome do Banco</label>
+                <input
+                  type="text"
+                  value={bankForm.bank_name_private}
+                  onChange={(e) => setBankForm({ ...bankForm, bank_name_private: e.target.value })}
+                  className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  placeholder="Ex: BFA, BAI, BCI"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Titular da Conta</label>
+                <input
+                  type="text"
+                  value={bankForm.holder_name_private}
+                  onChange={(e) => setBankForm({ ...bankForm, holder_name_private: e.target.value })}
+                  className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                  placeholder="Nome do titular"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all mt-4"
+              >
+                Salvar Dados Bancários
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
