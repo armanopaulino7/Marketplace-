@@ -34,12 +34,29 @@ export default function WalletCard({ hideWithdraw = false }: WalletCardProps) {
   const [withdrawing, setWithdrawing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
       fetchWallet();
+      fetchWithdrawalHistory();
     }
   }, [user]);
+
+  const fetchWithdrawalHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setWithdrawalHistory(data || []);
+    } catch (err) {
+      console.error('Error fetching withdrawal history:', err);
+    }
+  };
 
   const fetchWallet = async () => {
     try {
@@ -174,6 +191,60 @@ export default function WalletCard({ hideWithdraw = false }: WalletCardProps) {
           <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             <span className="text-sm font-medium">Saques processados com segurança</span>
+          </div>
+        </div>
+
+        {/* Withdrawal History */}
+        <div className="pt-8 border-t border-stone-100 dark:border-stone-800">
+          <div className="flex items-center gap-2 mb-6">
+            <Clock className="h-5 w-5 text-stone-400" />
+            <h3 className="text-lg font-bold text-stone-900 dark:text-white">Histórico de Saques</h3>
+          </div>
+
+          <div className="space-y-4">
+            {withdrawalHistory.length === 0 ? (
+              <div className="py-8 text-center text-stone-400 dark:text-stone-500 text-sm">
+                Nenhum saque solicitado ainda.
+              </div>
+            ) : (
+              withdrawalHistory.map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-100 dark:border-stone-800">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                      request.status === 'approved' 
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                        : request.status === 'rejected'
+                        ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'
+                        : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {request.status === 'approved' ? <CheckCircle2 className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <div className="font-bold text-stone-900 dark:text-white text-sm">
+                        Saque via {request.method}
+                      </div>
+                      <div className="text-[10px] text-stone-400 uppercase tracking-widest">
+                        {new Date(request.created_at).toLocaleDateString()} • {new Date(request.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-stone-900 dark:text-white text-sm">
+                      {request.amount.toLocaleString()} Kz
+                    </div>
+                    <div className={`text-[10px] font-bold uppercase tracking-widest ${
+                      request.status === 'approved' 
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : request.status === 'rejected'
+                        ? 'text-rose-600 dark:text-rose-400'
+                        : 'text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {request.status === 'approved' ? 'Concluído' : request.status === 'rejected' ? 'Recusado' : 'Pendente'}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

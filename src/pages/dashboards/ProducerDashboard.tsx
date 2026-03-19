@@ -52,6 +52,7 @@ export default function ProducerDashboard() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -443,36 +444,58 @@ export default function ProducerDashboard() {
     setError(null);
 
     try {
-      console.log('Submitting product with data:', {
-        ...formData,
-        producer_id: user.id
-      });
+      if (editingProduct) {
+        const { error: updateError } = await supabase
+          .from('produtos')
+          .update({
+            name: formData.name,
+            description: formData.description,
+            quantity: parseInt(formData.quantity),
+            price: parseFloat(formData.price),
+            category: formData.category,
+            subcategory: formData.subcategory,
+            brand: formData.brand,
+            model: formData.model,
+            commission_rate: parseFloat(formData.commission_rate),
+            pickup_address: formData.pickup_address,
+            phone1: formData.phone1,
+            phone2: formData.phone2,
+            condition: formData.condition,
+            imagens: formData.imagens,
+            variations: formData.variations,
+            status: 'pending' // Re-submit for approval after edit
+          })
+          .eq('id', editingProduct);
 
-      const { error: insertError } = await supabase
-        .from('produtos')
-        .insert({
-          producer_id: user.id,
-          name: formData.name,
-          description: formData.description,
-          quantity: parseInt(formData.quantity),
-          price: parseFloat(formData.price),
-          category: formData.category,
-          subcategory: formData.subcategory,
-          brand: formData.brand,
-          model: formData.model,
-          commission_rate: parseFloat(formData.commission_rate),
-          pickup_address: formData.pickup_address,
-          phone1: formData.phone1,
-          phone2: formData.phone2,
-          condition: formData.condition,
-          imagens: formData.imagens,
-          variations: formData.variations,
-          status: 'pending'
-        });
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('produtos')
+          .insert({
+            producer_id: user.id,
+            name: formData.name,
+            description: formData.description,
+            quantity: parseInt(formData.quantity),
+            price: parseFloat(formData.price),
+            category: formData.category,
+            subcategory: formData.subcategory,
+            brand: formData.brand,
+            model: formData.model,
+            commission_rate: parseFloat(formData.commission_rate),
+            pickup_address: formData.pickup_address,
+            phone1: formData.phone1,
+            phone2: formData.phone2,
+            condition: formData.condition,
+            imagens: formData.imagens,
+            variations: formData.variations,
+            status: 'pending'
+          });
 
-      if (insertError) throw insertError;
+        if (insertError) throw insertError;
+      }
 
       setSuccess(true);
+      setEditingProduct(null);
       setFormData({
         name: '',
         description: '',
@@ -501,6 +524,28 @@ export default function ProducerDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditProduct = (product: any) => {
+    setFormData({
+      name: product.name || '',
+      description: product.description || '',
+      quantity: product.quantity?.toString() || '',
+      price: product.price?.toString() || '',
+      category: product.category || '',
+      subcategory: product.subcategory || '',
+      brand: product.brand || '',
+      model: product.model || '',
+      commission_rate: product.commission_rate?.toString() || '10',
+      pickup_address: product.pickup_address || '',
+      phone1: product.phone1 || '',
+      phone2: product.phone2 || '',
+      condition: product.condition || 'Novo',
+      imagens: product.imagens || [],
+      variations: product.variations || { tamanho: [], peso: [], cor: [] }
+    });
+    setEditingProduct(product.id);
+    setActiveTab('cadastrar-produto');
   };
 
   const renderContent = () => {
@@ -641,9 +686,15 @@ export default function ProducerDashboard() {
                           <div className="font-bold text-stone-900 dark:text-white line-clamp-1">{product.name}</div>
                           <div className="text-sm text-stone-500 dark:text-stone-400">{product.price.toLocaleString()} Kz</div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end gap-2">
                           <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{product.quantity} em estoque</div>
-                          <div className="text-xs text-stone-400 uppercase tracking-widest">{product.status}</div>
+                          <div className="text-xs text-stone-400 uppercase tracking-widest mb-1">{product.status}</div>
+                          <button 
+                            onClick={() => handleEditProduct(product)}
+                            className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                          >
+                            Editar
+                          </button>
                         </div>
                       </div>
                     ))
@@ -791,14 +842,22 @@ export default function ProducerDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Cadastrar Novo Produto</h1>
-              <p className="text-stone-500 dark:text-stone-400">Preencha os detalhes abaixo para enviar seu produto para análise.</p>
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">
+                {editingProduct ? 'Editar Produto' : 'Cadastrar Novo Produto'}
+              </h1>
+              <p className="text-stone-500 dark:text-stone-400">
+                {editingProduct 
+                  ? 'Atualize os detalhes do seu produto abaixo.' 
+                  : 'Preencha os detalhes abaixo para enviar seu produto para análise.'}
+              </p>
             </div>
 
             {success && (
               <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 p-4 rounded-2xl flex items-center gap-3 text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-top-4">
                 <CheckCircle2 className="h-5 w-5" />
-                <p className="font-bold">Produto enviado com sucesso! Aguarde a aprovação do ADM.</p>
+                <p className="font-bold">
+                  {editingProduct ? 'Produto atualizado com sucesso!' : 'Produto enviado com sucesso!'} Aguarde a aprovação do ADM.
+                </p>
               </div>
             )}
 
@@ -1116,8 +1175,8 @@ export default function ProducerDashboard() {
                     <div className="h-6 w-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      <PlusCircle className="h-6 w-6" />
-                      Cadastrar Produto
+                      {editingProduct ? <TrendingUp className="h-6 w-6" /> : <PlusCircle className="h-6 w-6" />}
+                      {editingProduct ? 'Salvar Alterações' : 'Cadastrar Produto'}
                     </>
                   )}
                 </button>
