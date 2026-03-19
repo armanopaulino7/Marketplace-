@@ -24,13 +24,16 @@ import {
   FileText,
   ShieldAlert,
   History,
-  MessageSquare
+  MessageSquare,
+  ShoppingCart,
+  LogIn
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { NotificationBell } from './NotificationBell';
+import { useCart } from '../contexts/CartContext';
 
 interface MenuItem {
   id: string;
@@ -45,8 +48,9 @@ interface LayoutProps {
 }
 
 export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { totalItems } = useCart();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -56,6 +60,13 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   };
 
   const getMenuItems = (): MenuItem[] => {
+    if (!user) {
+      return [
+        { id: 'home', label: 'Marketplace', icon: Home },
+        { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
+      ];
+    }
+
     switch (profile?.role) {
       case 'admin':
       case 'adm':
@@ -63,6 +74,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
           { id: 'home', label: 'Home', icon: Home },
+          { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
           { id: 'financeiro', label: 'Aprovar Solicitação de Saque', icon: Wallet },
           { id: 'aprovacao-produtos', label: 'Aprovação de Produtos', icon: CheckSquare },
           { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users },
@@ -76,6 +88,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
+          { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
           { id: 'cadastrar-produto', label: 'Cadastrar Produto', icon: PlusCircle },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
           { id: 'afiliados', label: 'Afiliados', icon: Users },
@@ -91,6 +104,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
+          { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
           { id: 'afiliar-me', label: 'Afiliar-me', icon: UserPlus },
           { id: 'sou-afiliado', label: 'Sou Afiliado', icon: LinkIcon },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
@@ -105,13 +119,17 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
+          { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
           { id: 'favoritos', label: 'Favoritos', icon: Heart },
           { id: 'mensagens', label: 'Mensagens', icon: MessageSquare },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
       default:
-        return [];
+        return [
+          { id: 'home', label: 'Home', icon: Home },
+          { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
+        ];
     }
   };
 
@@ -121,11 +139,22 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col md:flex-row transition-colors duration-300">
       {/* Mobile Header */}
       <header className="md:hidden bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 h-16 flex items-center justify-between px-4 sticky top-0 z-30">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
           <ShoppingBag className="h-6 w-6 text-indigo-600" />
           <span className="font-bold text-lg text-stone-900 dark:text-white">CashLuanda</span>
         </div>
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setActiveTab('cart')}
+            className="p-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors relative"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </button>
           <NotificationBell />
           <button 
             type="button"
@@ -163,11 +192,22 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
       )}>
         <div className="h-full flex flex-col">
           <div className="h-16 hidden md:flex items-center justify-between px-6 border-b border-stone-100 dark:border-stone-800">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
               <ShoppingBag className="h-6 w-6 text-indigo-600" />
               <span className="font-bold text-xl text-stone-900 dark:text-white">CashLuanda</span>
             </div>
             <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setActiveTab('cart')}
+                className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl transition-colors relative"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </button>
               <NotificationBell />
               <button 
                 type="button"
@@ -206,28 +246,49 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           </div>
 
           <div className="p-4 border-t border-stone-100 dark:border-stone-800">
-            <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold overflow-hidden border-2 border-white dark:border-stone-700 shadow-sm">
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    profile?.email?.[0].toUpperCase()
-                  )}
+            {user ? (
+              <>
+                <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold overflow-hidden border-2 border-white dark:border-stone-700 shadow-sm">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        profile?.email?.[0].toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{profile?.email}</p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 uppercase tracking-wider font-semibold">{profile?.role}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{profile?.email}</p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 uppercase tracking-wider font-semibold">{profile?.role}</p>
-                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Sair da Conta
+                </button>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all"
+                >
+                  <LogIn className="h-5 w-5" />
+                  Entrar
+                </button>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
+                  <UserPlus className="h-5 w-5" />
+                  Criar Conta
+                </button>
               </div>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
-            >
-              <LogOut className="h-5 w-5" />
-              Sair da Conta
-            </button>
+            )}
           </div>
         </div>
       </aside>

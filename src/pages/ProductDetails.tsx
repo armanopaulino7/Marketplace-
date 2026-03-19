@@ -31,6 +31,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { ReviewSection } from '../components/ReviewSection';
 import { cn } from '../lib/utils';
 
@@ -39,6 +40,7 @@ export default function ProductDetails() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
@@ -48,6 +50,7 @@ export default function ProductDetails() {
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
   const ref = searchParams.get('ref');
 
   useEffect(() => {
@@ -356,19 +359,46 @@ export default function ProductDetails() {
               </div>
 
               <div className="pt-4 space-y-3">
-                <button 
-                  onClick={() => {
-                    const params = new URLSearchParams();
-                    if (ref) params.set('ref', ref);
-                    params.set('qty', quantity.toString());
-                    navigate(`/checkout/${product.id}?${params.toString()}`);
-                  }}
-                  disabled={product.quantity <= 0}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group disabled:opacity-50"
-                >
-                  <ShoppingBag className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                  Finalizar Compra
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => {
+                      addToCart(product, quantity);
+                      setAddedToCart(true);
+                      setTimeout(() => setAddedToCart(false), 2000);
+                    }}
+                    disabled={product.quantity <= 0}
+                    className={cn(
+                      "w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 group disabled:opacity-50",
+                      addedToCart 
+                        ? "bg-emerald-600 text-white shadow-emerald-100" 
+                        : "bg-white dark:bg-stone-800 text-stone-900 dark:text-white border border-stone-200 dark:border-stone-700 shadow-stone-100 dark:shadow-none hover:bg-stone-50 dark:hover:bg-stone-700"
+                    )}
+                  >
+                    {addedToCart ? (
+                      <>
+                        <Check className="h-6 w-6" />
+                        Adicionado!
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                        Adicionar ao Carrinho
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      if (ref) params.set('ref', ref);
+                      params.set('qty', quantity.toString());
+                      navigate(`/checkout/${product.id}?${params.toString()}`);
+                    }}
+                    disabled={product.quantity <= 0}
+                    className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group disabled:opacity-50"
+                  >
+                    Finalizar Compra
+                  </button>
+                </div>
                 <Link to={`/dashboard?tab=afiliar-me&id=${product.id}`} className="w-full py-4 bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold text-center block hover:bg-stone-100 dark:hover:bg-stone-700 transition-all">
                   Vender como afiliado
                 </Link>

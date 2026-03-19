@@ -150,10 +150,10 @@ export default function AdminDashboard() {
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
       console.log(`Updating order ${orderId} to ${status}`);
-      // Get order details first to process funds if completed
+      // Get order details first to process funds if completed or restore stock if cancelled
       const { data: order, error: fetchError } = await supabase
         .from('orders')
-        .select('*, produtos(name)')
+        .select('*, produtos(name, quantity)')
         .eq('id', orderId)
         .single();
       
@@ -165,6 +165,16 @@ export default function AdminDashboard() {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // If status is being updated to 'cancelled' and it wasn't cancelled before
+      if (status === 'cancelled' && order.status !== 'cancelled') {
+        console.log('Restoring stock for cancelled order:', order);
+        const { error: stockError } = await supabase.rpc('increment_product_stock', {
+          product_id_param: order.product_id,
+          amount_param: order.quantity || 1
+        });
+        if (stockError) console.error('Error restoring stock:', stockError);
+      }
 
       // If status is being updated to 'completed' and it wasn't completed before
       if (status === 'completed' && order.status !== 'completed') {

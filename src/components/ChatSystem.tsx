@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { MessageSquare, Send, X, Search, User, Check, CheckCheck } from 'lucide-react';
+import { MessageSquare, Send, X, Search, User, Check, CheckCheck, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
@@ -32,17 +32,56 @@ export function ChatSystem() {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [allProfiles, setAllProfiles] = useState<Contact[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
       fetchContacts();
+      fetchAllProfiles();
       const subscription = subscribeToMessages();
       return () => {
         subscription.unsubscribe();
       };
     }
   }, [user]);
+
+  const fetchAllProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('id', user?.id)
+        .order('full_name', { ascending: true });
+      
+      if (error) throw error;
+      if (data) {
+        setAllProfiles(data.map(p => ({
+          ...p,
+          unread_count: 0
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching all profiles:', err);
+    }
+  };
+
+  const startNewChat = (contact: Contact) => {
+    // Check if contact already exists in contacts list
+    const existing = contacts.find(c => c.id === contact.id);
+    if (!existing) {
+      setContacts(prev => [contact, ...prev]);
+    }
+    setSelectedContact(contact);
+    setShowNewChatModal(false);
+  };
+
+  const filteredProfiles = allProfiles.filter(p => 
+    p.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     if (selectedContact) {
@@ -189,7 +228,16 @@ export function ChatSystem() {
       {/* Sidebar: Contacts */}
       <div className="w-80 border-r border-stone-100 dark:border-stone-800 flex flex-col">
         <div className="p-6 border-b border-stone-100 dark:border-stone-800">
-          <h2 className="text-xl font-black text-stone-900 dark:text-white mb-4">Mensagens</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-black text-stone-900 dark:text-white">Mensagens</h2>
+            <button 
+              onClick={() => setShowNewChatModal(true)}
+              className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-sm"
+              title="Nova conversa"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
             <input 
@@ -365,6 +413,70 @@ export function ChatSystem() {
           </div>
         )}
       </div>
+
+      {/* New Chat Modal */}
+      {showNewChatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-[2.5rem] border border-stone-100 dark:border-stone-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+              <h3 className="text-xl font-black text-stone-900 dark:text-white">Nova Conversa</h3>
+              <button 
+                onClick={() => setShowNewChatModal(false)}
+                className="p-2 text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 border-b border-stone-100 dark:border-stone-800">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar por nome ou email..."
+                  className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded-xl py-3 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2">
+              {filteredProfiles.length === 0 ? (
+                <div className="p-12 text-center text-stone-400">
+                  <p className="text-sm">Nenhum usuário encontrado.</p>
+                </div>
+              ) : (
+                filteredProfiles.map(profile => (
+                  <button
+                    key={profile.id}
+                    onClick={() => startNewChat(profile)}
+                    className="w-full p-4 flex items-center gap-4 hover:bg-stone-50 dark:hover:bg-stone-800/50 rounded-2xl transition-all text-left"
+                  >
+                    <div className="h-10 w-10 rounded-xl bg-stone-100 dark:bg-stone-800 overflow-hidden border border-stone-200 dark:border-stone-700">
+                      {profile.avatar_url ? (
+                        <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-400 font-bold text-xs">
+                          {profile.full_name?.[0] || profile.email?.[0].toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold text-stone-900 dark:text-white text-sm">
+                        {profile.full_name || profile.email.split('@')[0]}
+                      </p>
+                      <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">
+                        {(profile as any).role || 'Usuário'}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

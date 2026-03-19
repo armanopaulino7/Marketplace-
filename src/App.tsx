@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import React, { useEffect, useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { CartProvider } from './contexts/CartContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { isSupabaseConfigured } from './lib/supabase';
 import { AlertTriangle, WifiOff, RefreshCw } from 'lucide-react';
@@ -17,6 +18,7 @@ import ProductDetails from './pages/ProductDetails';
 import Checkout from './pages/Checkout';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Marketplace from './pages/Marketplace';
 
 function ConfigWarning() {
   return (
@@ -90,49 +92,50 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/product/:id" element={<ProductDetails />} />
-          <Route path="/checkout/:id" element={<Checkout />} />
-          
-          {/* Protected Dashboard Routes */}
-          <Route path="/dashboard/adm" element={
-            <ProtectedRoute allowedRoles={['adm']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/dashboard/produtor" element={
-            <ProtectedRoute allowedRoles={['produtor']}>
-              <ProducerDashboard />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/dashboard/afiliado" element={
-            <ProtectedRoute allowedRoles={['afiliado']}>
-              <AffiliateDashboard />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/dashboard/cliente" element={
-            <ProtectedRoute allowedRoles={['cliente']}>
-              <CustomerDashboard />
-            </ProtectedRoute>
-          } />
+        <CartProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Marketplace />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/:id" element={<Checkout />} />
+              
+              {/* Protected Dashboard Routes */}
+              <Route path="/dashboard/adm" element={
+                <ProtectedRoute allowedRoles={['adm']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/dashboard/produtor" element={
+                <ProtectedRoute allowedRoles={['produtor']}>
+                  <ProducerDashboard />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/dashboard/afiliado" element={
+                <ProtectedRoute allowedRoles={['afiliado']}>
+                  <AffiliateDashboard />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/dashboard/cliente" element={
+                <ProtectedRoute allowedRoles={['cliente']}>
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              } />
 
-          {/* Root Redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  </ThemeProvider>
-);
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </CartProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 }
