@@ -6,6 +6,8 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@variant dark (&:where(.dark, .dark *));
+
 @layer base {
   body {
     @apply font-sans antialiased text-stone-900 bg-stone-50 dark:bg-stone-950 dark:text-stone-50;
