@@ -29,7 +29,7 @@ import {
   LogIn
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { ThemeToggle } from './ThemeToggle';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { NotificationBell } from './NotificationBell';
@@ -49,7 +49,6 @@ interface LayoutProps {
 
 export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const { user, profile, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { totalItems } = useCart();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -155,18 +154,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
             )}
           </button>
           <NotificationBell />
-          <button 
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleTheme();
-            }}
-            className="p-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors relative z-50"
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-          </button>
+          <ThemeToggle className="relative z-50" />
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
@@ -208,18 +196,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                 )}
               </button>
               <NotificationBell />
-              <button 
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleTheme();
-                }}
-                className="p-2 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-              </button>
+              <ThemeToggle />
             </div>
           </div>
 

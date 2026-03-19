@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { ShoppingBag, Mail, Lock, AlertCircle, Loader2, User, UserPlus, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -113,7 +114,10 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none">
