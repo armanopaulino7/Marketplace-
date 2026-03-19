@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { CartProvider } from './contexts/CartContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { isSupabaseConfigured } from './lib/supabase';
 import { AlertTriangle, WifiOff, RefreshCw } from 'lucide-react';
@@ -92,7 +93,8 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <CartProvider>
+        <NotificationProvider>
+          <CartProvider>
           <Router>
             <Routes>
               {/* Public Routes */}
@@ -135,7 +137,8 @@ export default function App() {
             </Routes>
           </Router>
         </CartProvider>
-      </AuthProvider>
-    </ThemeProvider>
+      </NotificationProvider>
+    </AuthProvider>
+  </ThemeProvider>
   );
 }

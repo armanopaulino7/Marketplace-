@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, X, Check, ExternalLink } from 'lucide-react';
+import { useNotifications } from '../contexts/NotificationContext';
+import { Bell, X, Check, ExternalLink, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
@@ -18,6 +19,7 @@ interface Notification {
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const { permission, requestPermission } = useNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -133,6 +135,15 @@ export function NotificationBell() {
             <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
               <h3 className="font-bold text-stone-900 dark:text-white">Notificações</h3>
               <div className="flex items-center gap-2">
+                {permission === 'default' && (
+                  <button
+                    onClick={requestPermission}
+                    className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                    title="Ativar notificações no sistema"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                )}
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
