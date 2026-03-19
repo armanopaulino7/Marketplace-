@@ -105,7 +105,6 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'home', label: 'Home', icon: Home },
           { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
-          { id: 'afiliar-me', label: 'Afiliar-me', icon: UserPlus },
           { id: 'sou-afiliado', label: 'Sou Afiliado', icon: LinkIcon },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
           { id: 'materiais', label: 'Materiais de Apoio', icon: FileText },

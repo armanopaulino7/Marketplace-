@@ -54,6 +54,7 @@ export default function ProductDetails() {
   const ref = searchParams.get('ref');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     fetchProduct();
     if (user) checkWishlist();
   }, [id, user]);
@@ -106,7 +107,21 @@ export default function ProductDetails() {
   };
 
   const fetchProduct = async () => {
+    if (!id) return;
+    
+    // Check if ID is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error('Invalid UUID format:', id);
+      setProduct(null);
+      setLoading(false);
+      return;
+    }
+
     try {
+      setLoading(true);
+      
+      // Fetch product with producer profile in one query if possible
       const { data, error: fetchError } = await supabase
         .from('produtos')
         .select('*, profiles:producer_id(email, full_name, avatar_url, is_verified)')
@@ -115,29 +130,49 @@ export default function ProductDetails() {
 
       if (fetchError) {
         console.error('Fetch error with join:', fetchError);
+        // Try fallback without join
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('produtos')
-          .select('*, profiles:producer_id(*)')
+          .select('*')
           .eq('id', id)
           .single();
         
-        if (fallbackError) throw fallbackError;
-        setProduct(fallbackData);
+        if (fallbackError) {
+          console.error('Fallback fetch error:', fallbackError);
+          setProduct(null);
+        } else {
+          // If product found, try to fetch profile separately
+          if (fallbackData && fallbackData.producer_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url, is_verified')
+              .eq('id', fallbackData.producer_id)
+              .single();
+            
+            if (profileData) {
+              fallbackData.profiles = profileData;
+            }
+          }
+          setProduct(fallbackData);
+        }
       } else {
         setProduct(data);
-        // Initialize variations
-        if (data.variations) {
-          const initialVars: Record<string, string> = {};
-          Object.entries(data.variations).forEach(([key, values]: [string, any]) => {
-            if (values && values.length > 0) {
-              initialVars[key] = values[0];
-            }
-          });
-          setSelectedVariation(initialVars);
-        }
+      }
+
+      // Initialize variations
+      const targetProduct = data || (product as any);
+      if (targetProduct?.variations) {
+        const initialVars: Record<string, string> = {};
+        Object.entries(targetProduct.variations).forEach(([key, values]: [string, any]) => {
+          if (values && Array.isArray(values) && values.length > 0) {
+            initialVars[key] = values[0];
+          }
+        });
+        setSelectedVariation(initialVars);
       }
     } catch (err) {
       console.error('Error fetching product:', err);
+      setProduct(null);
     } finally {
       setLoading(false);
     }
@@ -271,7 +306,7 @@ export default function ProductDetails() {
                   )}
                 </div>
                 <p className="text-sm font-bold text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
-                  Vendido por <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || 'Vendedor'}</span>
+                  Vendido por <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || product.profiles?.email || 'Vendedor'}</span>
                   {product.profiles?.is_verified && (
                     <span className="flex items-center gap-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
                       <ShieldCheck className="h-3 w-3" />

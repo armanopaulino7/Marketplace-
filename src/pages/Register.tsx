@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Register() {
   const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
@@ -69,6 +70,7 @@ export default function Register() {
         options: {
           data: {
             role,
+            full_name: fullName,
             phone,
             phone2,
           }
@@ -135,6 +137,27 @@ export default function Register() {
                 <span>{error}</span>
               </div>
             )}
+
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                Nome Completo
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-stone-400" />
+                </div>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-stone-200 dark:border-stone-700 rounded-2xl text-stone-900 dark:text-white bg-white dark:bg-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm"
+                  placeholder="Seu nome completo"
+                />
+              </div>
+            </div>
 
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">
