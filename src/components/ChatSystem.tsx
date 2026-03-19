@@ -54,6 +54,7 @@ export function ChatSystem() {
         .from('profiles')
         .select('*')
         .neq('id', user?.id)
+        .not('role', 'in', '("adm","admin")')
         .order('full_name', { ascending: true });
       
       if (error) throw error;
@@ -140,7 +141,8 @@ export function ChatSystem() {
       const { data: profiles } = await supabase
         .from('profiles')
         .select('*')
-        .in('id', contactIds);
+        .in('id', contactIds)
+        .not('role', 'in', '("adm","admin")');
       
       if (profiles) {
         const contactsWithInfo = await Promise.all(profiles.map(async (p) => {

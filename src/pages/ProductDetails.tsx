@@ -122,9 +122,19 @@ export default function ProductDetails() {
       setLoading(true);
       
       // Fetch product with producer profile in one query if possible
+      // Using the correct join syntax: table!column_name
       const { data, error: fetchError } = await supabase
         .from('produtos')
-        .select('*, profiles:producer_id(email, full_name, avatar_url, is_verified)')
+        .select(`
+          *,
+          profiles!producer_id (
+            id,
+            email,
+            full_name,
+            avatar_url,
+            is_verified
+          )
+        `)
         .eq('id', id)
         .single();
 
@@ -143,19 +153,31 @@ export default function ProductDetails() {
         } else {
           // If product found, try to fetch profile separately
           if (fallbackData && fallbackData.producer_id) {
-            const { data: profileData } = await supabase
+            console.log('Product found without join, fetching profile separately for producer_id:', fallbackData.producer_id);
+            const { data: profileData, error: profileError } = await supabase
               .from('profiles')
-              .select('full_name, avatar_url, is_verified')
+              .select('id, email, full_name, avatar_url, is_verified')
               .eq('id', fallbackData.producer_id)
               .single();
             
+            if (profileError) {
+              console.error('Error fetching profile separately:', profileError);
+            }
+
             if (profileData) {
+              console.log('Profile data fetched separately:', profileData);
               fallbackData.profiles = profileData;
+            } else {
+              console.warn('No profile data found for producer_id:', fallbackData.producer_id);
             }
           }
           setProduct(fallbackData);
         }
       } else {
+        console.log('Product fetched with join successfully:', data);
+        if (!data.profiles) {
+          console.warn('Product fetched but profiles is null. producer_id was:', data.producer_id);
+        }
         setProduct(data);
       }
 
