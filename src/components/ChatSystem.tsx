@@ -215,7 +215,10 @@ export function ChatSystem() {
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error sending message:', error);
+      alert('Erro ao enviar mensagem. Por favor, tente novamente.');
+    } else if (data) {
       setMessages(prev => [...prev, data]);
       setNewMessage('');
       fetchContacts();

@@ -109,14 +109,15 @@ export default function ProductDetails() {
     try {
       const { data, error: fetchError } = await supabase
         .from('produtos')
-        .select('*, profiles!produtos_producer_id_fkey(email, full_name, avatar_url, is_verified)')
+        .select('*, profiles:producer_id(email, full_name, avatar_url, is_verified)')
         .eq('id', id)
         .single();
 
       if (fetchError) {
+        console.error('Fetch error with join:', fetchError);
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('produtos')
-          .select('*')
+          .select('*, profiles:producer_id(*)')
           .eq('id', id)
           .single();
         
@@ -399,9 +400,6 @@ export default function ProductDetails() {
                     Finalizar Compra
                   </button>
                 </div>
-                <Link to={`/dashboard?tab=afiliar-me&id=${product.id}`} className="w-full py-4 bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold text-center block hover:bg-stone-100 dark:hover:bg-stone-700 transition-all">
-                  Vender como afiliado
-                </Link>
               </div>
             </div>
 

@@ -44,11 +44,14 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       .from('reviews')
       .select(`
         *,
-        profiles:user_id (full_name, avatar_url)
+        profiles:user_id (*)
       `)
       .eq('product_id', productId)
       .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('Error fetching reviews:', error);
+    }
     if (data) {
       setReviews(data);
       const existing = data.find((r) => r.user_id === user?.id);
@@ -86,7 +89,10 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
         comment,
       });
 
-    if (!error) {
+    if (error) {
+      console.error('Error submitting review:', error);
+      alert('Erro ao enviar avaliação: ' + error.message);
+    } else {
       setComment('');
       fetchReviews();
     }
