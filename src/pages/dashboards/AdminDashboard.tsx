@@ -37,6 +37,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
+import { createNotification } from '../../lib/notifications';
 import WalletCard from '../../components/WalletCard';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageUpload from '../../components/ImageUpload';
@@ -49,6 +50,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [pendingProducts, setPendingProducts] = useState<any[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
   const [deliveryFees, setDeliveryFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,6 +169,15 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
+      // 1. Notify Customer about status change
+      await createNotification(
+        order.customer_id,
+        'Status do Pedido Atualizado',
+        `Seu pedido de ${order.produtos?.name} agora está: ${status === 'completed' ? 'Concluído' : status === 'cancelled' ? 'Cancelado' : status === 'shipped' ? 'Enviado' : status}`,
+        'order_status',
+        '/dashboard/cliente'
+      );
+
       // If status is being updated to 'cancelled' and it wasn't cancelled before
       if (status === 'cancelled' && order.status !== 'cancelled') {
         console.log('Restoring stock for cancelled order:', order);
@@ -190,6 +202,14 @@ export default function AdminDashboard() {
             description_param: `Venda concluída: ${order.produtos?.name || 'Produto'}`,
             days_to_release: 0
           });
+          
+          await createNotification(
+            order.producer_id,
+            'Pagamento Recebido!',
+            `O pagamento da venda do produto ${order.produtos?.name} foi confirmado e creditado em sua carteira.`,
+            'sale',
+            '/dashboard/produtor'
+          );
         }
 
         // 2. Update Affiliate Wallet
@@ -202,6 +222,14 @@ export default function AdminDashboard() {
             description_param: `Comissão concluída: ${order.produtos?.name || 'Produto'}`,
             days_to_release: 0
           });
+
+          await createNotification(
+            order.affiliate_id,
+            'Comissão Recebida!',
+            `Sua comissão pela venda do produto ${order.produtos?.name} foi creditada em sua carteira.`,
+            'commission',
+            '/dashboard/afiliado'
+          );
         }
 
         // 3. Update Admin Wallet
@@ -502,6 +530,23 @@ export default function AdminDashboard() {
 
       if (error) throw error;
       
+      // Notify Producer
+      const { data: product } = await supabase
+        .from('produtos')
+        .select('name, producer_id')
+        .eq('id', productId)
+        .single();
+
+      if (product) {
+        await createNotification(
+          product.producer_id,
+          status === 'approved' ? 'Produto Aprovado!' : 'Produto Rejeitado',
+          `Seu produto "${product.name}" foi ${status === 'approved' ? 'aprovado e já está disponível na loja' : 'rejeitado pela administração'}.`,
+          'product',
+          '/dashboard/produtor'
+        );
+      }
+
       setPendingProducts(prev => prev.filter(p => p.id !== productId));
       fetchStats();
     } catch (err: any) {
@@ -567,6 +612,23 @@ export default function AdminDashboard() {
 
       if (error) throw error;
       
+      // Notify User
+      const { data: withdrawal } = await supabase
+        .from('withdrawal_requests')
+        .select('user_id, amount')
+        .eq('id', withdrawalId)
+        .single();
+
+      if (withdrawal) {
+        await createNotification(
+          withdrawal.user_id,
+          status === 'approved' ? 'Saque Aprovado!' : 'Saque Rejeitado',
+          `Sua solicitação de saque no valor de ${withdrawal.amount.toLocaleString()} Kz foi ${status === 'approved' ? 'aprovada e o pagamento está sendo processado' : 'rejeitada pela administração'}.`,
+          'withdrawal',
+          '/dashboard'
+        );
+      }
+
       setPendingWithdrawals(prev => prev.filter(w => w.id !== withdrawalId));
       fetchStats();
       alert(`Saque ${status === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso!`);
@@ -1012,6 +1074,16 @@ export default function AdminDashboard() {
                         {product.model && <span className="px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 text-[10px] font-bold uppercase rounded-lg">Modelo: {product.model}</span>}
                         <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase rounded-lg">Comissão: {product.commission_rate}%</span>
                       </div>
+                      <button 
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setShowDetailsModal(true);
+                        }}
+                        className="mt-3 text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
+                      >
+                        <Search className="h-3 w-3" />
+                        Ver Detalhes Completos
+                      </button>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
                       <button 
@@ -1501,6 +1573,130 @@ export default function AdminDashboard() {
   return (
     <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
       {renderContent()}
+      {showDetailsModal && (
+        <ProductDetailsModal 
+          product={selectedProduct} 
+          onClose={() => setShowDetailsModal(false)}
+          onAction={handleProductAction}
+        />
+      )}
     </Layout>
+  );
+}
+
+// Product Details Modal Component
+function ProductDetailsModal({ product, onClose, onAction }: { product: any, onClose: () => void, onAction: (id: string, status: 'approved' | 'rejected') => void }) {
+  if (!product) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-stone-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-6 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-stone-900 dark:text-white">Detalhes do Produto</h2>
+          <button onClick={onClose} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-all">
+            <LogOut className="h-5 w-5 rotate-180" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="aspect-square bg-stone-100 dark:bg-stone-800 rounded-2xl overflow-hidden">
+                {product.imagens?.[0] ? (
+                  <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-stone-300">
+                    <Package className="h-12 w-12" />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {product.imagens?.slice(1, 5).map((img: string, i: number) => (
+                  <div key={i} className="aspect-square bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden">
+                    <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-2xl font-black text-stone-900 dark:text-white">{product.name}</h3>
+                <p className="text-indigo-600 font-bold text-xl mt-1">{product.price.toLocaleString()} Kz</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500">Categoria:</span>
+                  <span className="font-bold text-stone-900 dark:text-white">{product.category}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500">Subcategoria:</span>
+                  <span className="font-bold text-stone-900 dark:text-white">{product.subcategory}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500">Estoque:</span>
+                  <span className="font-bold text-stone-900 dark:text-white">{product.quantity} unidades</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500">Comissão:</span>
+                  <span className="font-bold text-emerald-600">{product.commission_rate}%</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl space-y-2">
+                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Local de Levantamento</p>
+                <p className="text-sm text-stone-700 dark:text-stone-300 flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-indigo-500" />
+                  {product.pickup_address}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="font-bold text-stone-900 dark:text-white">Descrição</h4>
+            <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed whitespace-pre-wrap">
+              {product.description}
+            </p>
+          </div>
+
+          {product.variations && product.variations.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-bold text-stone-900 dark:text-white">Variações</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {product.variations.map((v: any, i: number) => (
+                  <div key={i} className="p-3 border border-stone-200 dark:border-stone-800 rounded-xl">
+                    <p className="text-[10px] text-stone-500 uppercase font-bold">{v.name}</p>
+                    <p className="text-sm font-bold text-stone-900 dark:text-white">{v.options.join(', ')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-stone-100 dark:border-stone-800 flex gap-3">
+          <button 
+            onClick={() => {
+              onAction(product.id, 'rejected');
+              onClose();
+            }}
+            className="flex-1 py-4 bg-rose-50 dark:bg-rose-900/20 text-rose-600 font-bold rounded-2xl hover:bg-rose-100 transition-all"
+          >
+            Rejeitar Produto
+          </button>
+          <button 
+            onClick={() => {
+              onAction(product.id, 'approved');
+              onClose();
+            }}
+            className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 dark:shadow-none"
+          >
+            Aprovar Produto
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

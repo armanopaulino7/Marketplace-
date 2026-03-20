@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { createNotification } from '../lib/notifications';
 import { 
   ArrowLeft, 
   CreditCard, 
@@ -189,6 +190,24 @@ export default function Checkout() {
 
       if (orderError) throw orderError;
       
+      // 1.1 Notify Producer
+      await createNotification(
+        product.producer_id,
+        'Nova Venda Realizada!',
+        `Você vendeu ${qty}x ${product.name}. Aguarde a confirmação do pagamento.`,
+        'sale',
+        '/dashboard/produtor'
+      );
+
+      // 1.2 Notify Customer
+      await createNotification(
+        user.id,
+        'Pedido Realizado!',
+        `Seu pedido de ${qty}x ${product.name} foi recebido e está aguardando pagamento.`,
+        'order_status',
+        '/dashboard/cliente'
+      );
+
       // 2. Decrement Product Quantity (Atomic)
       const { error: updateError } = await supabase
         .rpc('decrement_product_stock', {

@@ -324,12 +324,12 @@ export default function ProductDetails() {
                     <img src={product.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs font-bold">
-                      {product.profiles?.full_name?.[0] || 'V'}
+                      {product.profiles?.full_name?.[0] || 'P'}
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-bold text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
-                  Vendido por <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || product.profiles?.email || 'Vendedor'}</span>
+                <div className="text-sm font-bold text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
+                  Produtor: <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || product.profiles?.email || 'Produtor'}</span>
                   {product.profiles?.is_verified && (
                     <span className="flex items-center gap-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
                       <ShieldCheck className="h-3 w-3" />
@@ -338,16 +338,16 @@ export default function ProductDetails() {
                   )}
                   {isOnline(product.profiles?.last_seen) ? (
                     <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-2">
-                      <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                      <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse block" />
                       Online
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-2">
-                      <div className="h-2 w-2 bg-stone-300 dark:bg-stone-700 rounded-full" />
+                      <span className="h-2 w-2 bg-stone-300 dark:bg-stone-700 rounded-full block" />
                       Offline
                     </span>
                   )}
-                </p>
+                </div>
               </div>
               
               <h1 className="text-4xl font-black text-stone-900 dark:text-white leading-tight">

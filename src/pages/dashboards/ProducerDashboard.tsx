@@ -42,6 +42,7 @@ import { CouponManager } from '../../components/CouponManager';
 import { SupportMaterials } from '../../components/SupportMaterials';
 import { AffiliateRanking } from '../../components/AffiliateRanking';
 import { ChatSystem } from '../../components/ChatSystem';
+import { cn } from '../../lib/utils';
 
 export default function ProducerDashboard() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -111,6 +112,7 @@ export default function ProducerDashboard() {
 
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [allMyProducts, setAllMyProducts] = useState<any[]>([]);
   const [affiliates, setAffiliates] = useState<any[]>([]);
 
   useEffect(() => {
@@ -118,12 +120,34 @@ export default function ProducerDashboard() {
       if (activeTab === 'home') {
         fetchProducts();
       }
+      if (activeTab === 'meus-produtos') {
+        fetchAllMyProducts();
+      }
       fetchStats();
       fetchRecentSales();
       fetchTopProducts();
       fetchAffiliates();
     }
   }, [user, activeTab]);
+
+  const fetchAllMyProducts = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('producer_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setAllMyProducts(data || []);
+    } catch (err) {
+      console.error('Error fetching all products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAffiliates = async () => {
     if (!user) return;
@@ -1245,6 +1269,36 @@ export default function ProducerDashboard() {
                     </>
                   )}
                 </button>
+
+                {editingProduct && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setEditingProduct(null);
+                      setFormData({
+                        name: '',
+                        description: '',
+                        quantity: '',
+                        price: '',
+                        category: '',
+                        subcategory: '',
+                        brand: '',
+                        model: '',
+                        commission_rate: '10',
+                        pickup_address: '',
+                        phone1: '',
+                        phone2: '',
+                        condition: 'Novo',
+                        imagens: [],
+                        variations: { tamanho: [], peso: [], cor: [] }
+                      });
+                      setActiveTab('meus-produtos');
+                    }}
+                    className="w-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 py-4 rounded-3xl font-bold text-sm hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
+                  >
+                    Cancelar Edição
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -1292,6 +1346,109 @@ export default function ProducerDashboard() {
                 )}
               </div>
             </div>
+          </div>
+        );
+      case 'meus-produtos':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Meus Produtos</h1>
+                <p className="text-stone-500 dark:text-stone-400">Gerencie e edite seus produtos cadastrados.</p>
+              </div>
+              <button 
+                onClick={() => setActiveTab('cadastrar-produto')}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20"
+              >
+                <PlusCircle className="h-5 w-5" />
+                Novo Produto
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" />
+              <input 
+                type="text"
+                placeholder="Buscar em meus produtos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              />
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : allMyProducts.length === 0 ? (
+              <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+                <Package className="h-16 w-16 text-stone-100 dark:text-stone-800 mx-auto" />
+                <h2 className="text-xl font-bold text-stone-900 dark:text-white">Nenhum produto cadastrado</h2>
+                <p className="text-stone-500 dark:text-stone-400">Você ainda não possui produtos em sua conta.</p>
+                <button 
+                  onClick={() => setActiveTab('cadastrar-produto')}
+                  className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+                >
+                  Cadastrar Primeiro Produto
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {allMyProducts
+                  .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map((product) => (
+                  <div key={product.id} className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <div className="aspect-video relative overflow-hidden">
+                      <img 
+                        src={product.imagens?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80'} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-4 right-4">
+                        <span className={cn(
+                          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm backdrop-blur-md",
+                          product.status === 'approved' ? "bg-emerald-500/90 text-white" :
+                          product.status === 'rejected' ? "bg-rose-500/90 text-white" :
+                          "bg-amber-500/90 text-white"
+                        )}>
+                          {product.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h3 className="font-bold text-stone-900 dark:text-white line-clamp-1">{product.name}</h3>
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{product.category} • {product.subcategory}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-lg font-bold text-stone-900 dark:text-white">
+                          {product.price.toLocaleString()} Kz
+                        </div>
+                        <div className="text-xs text-stone-500 dark:text-stone-400">
+                          Estoque: <span className="font-bold text-stone-900 dark:text-white">{product.quantity}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleEditProduct(product)}
+                          className="flex-1 py-3 bg-stone-900 dark:bg-stone-700 text-white rounded-2xl font-bold text-sm hover:bg-stone-800 dark:hover:bg-stone-600 transition-all flex items-center justify-center gap-2"
+                        >
+                          <PlusCircle className="h-4 w-4" />
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => navigate(`/product/${product.id}`)}
+                          className="p-3 border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl font-bold text-sm hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                        >
+                          <ArrowUpRight className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       case 'carteira':

@@ -20,7 +20,8 @@ import {
   Camera,
   Search,
   ArrowRight,
-  LogOut
+  LogOut,
+  X
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -62,6 +63,8 @@ export default function AffiliateDashboard() {
     level: 'Bronze'
   });
   const [commissionHistory, setCommissionHistory] = useState<any[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const fetchStats = async () => {
     if (!user) return;
@@ -441,6 +444,91 @@ export default function AffiliateDashboard() {
             </div>
           </div>
         );
+      case 'afiliar-me':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Afiliar-me</h1>
+              <p className="text-stone-500 dark:text-stone-400">Escolha produtos para promover e ganhar comissões.</p>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" />
+              <input 
+                type="text"
+                placeholder="Buscar produtos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              />
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : availableProducts.length === 0 ? (
+              <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+                <ShoppingBag className="h-16 w-16 text-stone-100 dark:text-stone-800 mx-auto" />
+                <h2 className="text-xl font-bold text-stone-900 dark:text-white">Nenhum produto disponível</h2>
+                <p className="text-stone-500 dark:text-stone-400">Não há novos produtos para afiliação no momento.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {availableProducts
+                  .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map((product) => (
+                  <div key={product.id} className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden group hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300">
+                    <div className="aspect-square relative overflow-hidden">
+                      <img 
+                        src={product.imagens?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80'} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-4 right-4">
+                        <span className="px-3 py-1 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm rounded-full text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest shadow-sm">
+                          {product.commission_rate}% Comissao
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h3 className="font-bold text-stone-900 dark:text-white line-clamp-1">{product.name}</h3>
+                        <p className="text-sm text-stone-500 dark:text-stone-400 line-clamp-2 mt-1">{product.description}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-lg font-bold text-stone-900 dark:text-white">
+                          {product.price.toLocaleString()} Kz
+                        </div>
+                        <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                          Ganhe {(product.price * product.commission_rate / 100).toLocaleString()} Kz
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setShowDetailsModal(true);
+                          }}
+                          className="flex-1 py-3 border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl font-bold text-sm hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                        >
+                          Detalhes
+                        </button>
+                        <button 
+                          onClick={() => handleAffiliateRequest(product.id)}
+                          className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20"
+                        >
+                          Afiliar-me
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
       case 'sou-afiliado':
         return (
           <div className="space-y-6">
@@ -721,6 +809,80 @@ export default function AffiliateDashboard() {
   return (
     <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
       {renderContent()}
+
+      {/* Product Details Modal */}
+      {showDetailsModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="relative h-64 sm:h-80">
+              <img 
+                src={selectedProduct.imagens?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80'} 
+                alt={selectedProduct.name}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <button 
+                onClick={() => setShowDetailsModal(false)}
+                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-all"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold text-stone-900 dark:text-white">{selectedProduct.name}</h2>
+                  <p className="text-stone-500 dark:text-stone-400 mt-1">{selectedProduct.category}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {selectedProduct.price.toLocaleString()} Kz
+                  </div>
+                  <p className="text-xs text-stone-400 dark:text-stone-500 uppercase tracking-widest font-bold mt-1">Preço Final</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-bold text-stone-900 dark:text-white uppercase tracking-widest">Descrição</h4>
+                <p className="text-stone-600 dark:text-stone-400 text-sm leading-relaxed">
+                  {selectedProduct.description}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-stone-50 dark:bg-stone-800/50 p-4 rounded-2xl border border-stone-100 dark:border-stone-700">
+                  <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">Sua Comissão</p>
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{selectedProduct.commission_rate}%</p>
+                </div>
+                <div className="bg-stone-50 dark:bg-stone-800/50 p-4 rounded-2xl border border-stone-100 dark:border-stone-700">
+                  <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">Você Ganha</p>
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    {(selectedProduct.price * selectedProduct.commission_rate / 100).toLocaleString()} Kz
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  onClick={() => setShowDetailsModal(false)}
+                  className="flex-1 py-4 border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl font-bold hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                >
+                  Fechar
+                </button>
+                <button 
+                  onClick={() => {
+                    handleAffiliateRequest(selectedProduct.id);
+                    setShowDetailsModal(false);
+                  }}
+                  className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20"
+                >
+                  Afiliar-me Agora
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

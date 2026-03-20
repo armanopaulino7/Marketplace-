@@ -19,7 +19,7 @@ interface Notification {
 
 export function NotificationBell() {
   const { user } = useAuth();
-  const { permission, requestPermission } = useNotifications();
+  const { permission, requestPermission, showNotification } = useNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -142,6 +142,17 @@ export function NotificationBell() {
                     title="Ativar notificações no sistema"
                   >
                     <Settings className="h-4 w-4" />
+                  </button>
+                )}
+                {permission === 'granted' && (
+                  <button
+                    onClick={() => showNotification('Teste de Notificação', { 
+                      body: 'Se você está vendo isso, as notificações estão funcionando corretamente!',
+                      icon: 'https://picsum.photos/seed/marketplace/192/192'
+                    })}
+                    className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    Testar
                   </button>
                 )}
                 {unreadCount > 0 && (
