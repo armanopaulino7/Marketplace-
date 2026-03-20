@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-import { Bell } from 'lucide-react';
+import { Bell, Settings } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface NotificationContextType {
   permission: NotificationPermission;
@@ -45,14 +46,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         (payload) => {
           console.log('New notification received from Supabase:', payload);
           const newNotif = payload.new;
+          
+          // Show Toast notification (In-app)
+          toast.success(`${newNotif.title}\n${newNotif.message}`, {
+            duration: 5000,
+            position: 'top-right',
+            icon: '🔔',
+            style: {
+              borderRadius: '16px',
+              background: '#1c1917',
+              color: '#fff',
+              fontSize: '14px',
+              fontWeight: 'bold',
+            },
+          });
+
+          // Show Browser notification (if granted)
           if (permission === 'granted') {
-            showNotification(newNotif.title, {
+            const options: any = {
               body: newNotif.message,
               icon: 'https://picsum.photos/seed/marketplace/192/192',
               badge: 'https://picsum.photos/seed/marketplace/192/192',
               tag: newNotif.id,
+              renotify: true,
+              vibrate: [200, 100, 200],
               data: { link: newNotif.link }
-            });
+            };
+            showNotification(newNotif.title, options);
           } else {
             console.warn('Notification received but permission is not granted:', permission);
           }
@@ -78,10 +98,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setPermission(result);
       setShowPrompt(false);
       if (result === 'granted') {
-        showNotification('Notificações Ativadas!', {
+        const options: any = {
           body: 'Você agora receberá alertas de vendas e pedidos.',
-          icon: 'https://picsum.photos/seed/marketplace/192/192'
-        });
+          icon: 'https://picsum.photos/seed/marketplace/192/192',
+          vibrate: [200, 100, 200]
+        };
+        showNotification('Notificações Ativadas!', options);
       }
     } catch (err) {
       console.error('Error requesting notification permission:', err);
@@ -155,14 +177,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               </button>
             </div>
 
-            <div className="bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-100 dark:border-amber-900/20">
-              <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-tight">
-                <strong>Dica:</strong> Se estiver no iPhone, adicione este site à sua <strong>Tela de Início</strong> para receber notificações.
+            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 space-y-2">
+              <p className="text-xs text-amber-800 dark:text-amber-400 font-bold flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Atenção usuários de iPhone:
+              </p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-500 leading-tight">
+                Para receber notificações na barra do sistema, você deve clicar no ícone de <strong>Compartilhar</strong> e selecionar <strong>"Adicionar à Tela de Início"</strong>.
               </p>
             </div>
           </div>
         </div>
       )}
+      <Toaster />
       {children}
     </NotificationContext.Provider>
   );

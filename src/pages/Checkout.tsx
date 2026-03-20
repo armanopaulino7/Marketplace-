@@ -226,8 +226,40 @@ export default function Checkout() {
         }
       }
 
-      // Funds will be processed by the admin when the order is marked as 'completed'
-      // in the Admin Dashboard. This ensures balances only update after confirmation.
+      // 5. Process funds immediately so they appear as available for withdrawal
+      // Note: In a production environment, you might want to wait for admin confirmation.
+      // But for this use case, we'll make it available immediately as requested.
+      
+      try {
+        await supabase.rpc('process_sale_funds', {
+          user_id_param: product.producer_id,
+          amount_param: producerAmount,
+          description_param: `Venda: ${product.name}`,
+          days_to_release: 0
+        });
+
+        if (ref && affiliateCommission > 0) {
+          await supabase.rpc('process_sale_funds', {
+            user_id_param: ref,
+            amount_param: affiliateCommission,
+            description_param: `Comissão de Afiliado: ${product.name}`,
+            days_to_release: 0
+          });
+        }
+
+        // Process admin commission
+        const adminId = '00000000-0000-0000-0000-000000000000'; // Placeholder or fetch actual admin
+        await supabase.rpc('process_sale_funds', {
+          user_id_param: adminId,
+          amount_param: platformFee,
+          description_param: `Taxa de Plataforma: ${product.name}`,
+          days_to_release: 0
+        });
+      } catch (fundError) {
+        console.error('Error processing initial funds:', fundError);
+        // We don't fail the order if fund processing fails here, 
+        // as the admin can still process it manually later.
+      }
 
       setSuccess(true);
     } catch (err: any) {

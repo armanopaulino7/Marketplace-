@@ -146,10 +146,16 @@ export function NotificationBell() {
                 )}
                 {permission === 'granted' && (
                   <button
-                    onClick={() => showNotification('Teste de Notificação', { 
-                      body: 'Se você está vendo isso, as notificações estão funcionando corretamente!',
-                      icon: 'https://picsum.photos/seed/marketplace/192/192'
-                    })}
+                    onClick={() => {
+                      const options: any = { 
+                        body: 'Se você está vendo isso, as notificações estão funcionando corretamente!',
+                        icon: 'https://picsum.photos/seed/marketplace/192/192',
+                        vibrate: [200, 100, 200],
+                        renotify: true,
+                        tag: 'test'
+                      };
+                      showNotification('Teste de Notificação', options);
+                    }}
                     className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 hover:underline"
                   >
                     Testar

@@ -329,7 +329,7 @@ export default function ProductDetails() {
                   )}
                 </div>
                 <div className="text-sm font-bold text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
-                  Produtor: <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || product.profiles?.email || 'Produtor'}</span>
+                  Vendido por: <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || product.profiles?.email || 'Produtor'}</span>
                   {product.profiles?.is_verified && (
                     <span className="flex items-center gap-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
                       <ShieldCheck className="h-3 w-3" />

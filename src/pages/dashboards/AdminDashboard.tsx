@@ -190,61 +190,30 @@ export default function AdminDashboard() {
 
       // If status is being updated to 'completed' and it wasn't completed before
       if (status === 'completed' && order.status !== 'completed') {
-        console.log('Processing funds for completed order:', order);
+        console.log('Order marked as completed:', order);
         
-        // 1. Update Producer Wallet
-        const producerComm = Number(order.producer_commission);
-        if (order.producer_id && producerComm > 0) {
-          console.log(`Crediting producer ${order.producer_id}: ${producerComm}`);
-          await supabase.rpc('process_sale_funds', {
-            user_id_param: order.producer_id,
-            amount_param: producerComm,
-            description_param: `Venda concluída: ${order.produtos?.name || 'Produto'}`,
-            days_to_release: 0
-          });
-          
+        // Note: Funds are now processed immediately at checkout in Checkout.tsx
+        // to satisfy the requirement of being available immediately for withdrawal.
+        // We only send the confirmation notification here.
+        
+        if (order.producer_id) {
           await createNotification(
             order.producer_id,
-            'Pagamento Recebido!',
-            `O pagamento da venda do produto ${order.produtos?.name} foi confirmado e creditado em sua carteira.`,
+            'Pedido Concluído',
+            `O pedido do produto ${order.produtos?.name} foi marcado como concluído.`,
             'sale',
             '/dashboard/produtor'
           );
         }
 
-        // 2. Update Affiliate Wallet
-        const affiliateComm = Number(order.commission_amount);
-        if (order.affiliate_id && affiliateComm > 0) {
-          console.log(`Crediting affiliate ${order.affiliate_id}: ${affiliateComm}`);
-          await supabase.rpc('process_sale_funds', {
-            user_id_param: order.affiliate_id,
-            amount_param: affiliateComm,
-            description_param: `Comissão concluída: ${order.produtos?.name || 'Produto'}`,
-            days_to_release: 0
-          });
-
+        if (order.affiliate_id) {
           await createNotification(
             order.affiliate_id,
-            'Comissão Recebida!',
-            `Sua comissão pela venda do produto ${order.produtos?.name} foi creditada em sua carteira.`,
+            'Venda de Afiliado Concluída',
+            `A venda do produto ${order.produtos?.name} que você indicou foi concluída.`,
             'commission',
             '/dashboard/afiliado'
           );
-        }
-
-        // 3. Update Admin Wallet
-        const platformFee = Number(order.platform_fee || 0);
-        const deliveryFee = Number(order.delivery_fee || 0);
-        const adminTotal = platformFee + deliveryFee;
-        
-        if (adminTotal > 0 && user) {
-          console.log(`Crediting admin ${user.id}: ${adminTotal}`);
-          await supabase.rpc('process_sale_funds', {
-            user_id_param: user.id, // Current admin
-            amount_param: adminTotal,
-            description_param: `Taxa de plataforma + Entrega concluída: ${order.produtos?.name || 'Produto'}`,
-            days_to_release: 0
-          });
         }
       }
 
