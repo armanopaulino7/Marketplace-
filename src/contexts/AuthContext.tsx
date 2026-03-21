@@ -50,9 +50,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearSession = () => {
     console.warn('Clearing auth session manually...');
+    // Clear localStorage
     Object.keys(localStorage).forEach(key => {
       if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
         localStorage.removeItem(key);
+      }
+    });
+    // Clear sessionStorage
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
+        sessionStorage.removeItem(key);
       }
     });
     setUser(null);
@@ -70,12 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Session error:', error.message);
           
           // If session is invalid or refresh token not found, clear everything
-          if (
+          const isRefreshTokenError = 
             error.message.includes('Refresh Token Not Found') || 
             error.message.includes('invalid_refresh_token') ||
             error.message.includes('Refresh Token is invalid') ||
-            error.message.includes('session_not_found')
-          ) {
+            error.message.includes('session_not_found') ||
+            error.message.includes('Invalid Refresh Token');
+
+          if (isRefreshTokenError) {
+            console.warn('Fatal auth error detected, clearing session...');
             await handleAuthError();
           } else {
             setLoading(false);
@@ -89,9 +99,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setLoading(false);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Unexpected auth error:', err);
-        setLoading(false);
+        if (err?.message?.includes('Refresh Token')) {
+          await handleAuthError();
+        } else {
+          setLoading(false);
+        }
       }
     };
 
