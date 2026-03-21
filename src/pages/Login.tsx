@@ -210,7 +210,7 @@ export default function Login() {
                 </button>
               </div>
               <div className="mt-2 text-right">
-                <Link to="/forgot-password" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                <Link to="/forgot-password" size="sm" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
                   Esqueceu sua senha?
                 </Link>
               </div>

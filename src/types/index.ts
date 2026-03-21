@@ -11,11 +11,6 @@ export interface Profile {
   iban_private?: string;
   bank_name_private?: string;
   holder_name_private?: string;
-  iban_platform?: string;
-  paypay_platform?: string;
-  express_platform?: string;
-  unitel_platform?: string;
-  afri_platform?: string;
   created_at: string;
   last_seen?: string;
 }

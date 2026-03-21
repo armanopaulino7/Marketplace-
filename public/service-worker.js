@@ -1,16 +1,17 @@
-const CACHE_NAME = 'cashluanda-v2';
+const CACHE_NAME = 'cashluanda-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  'https://picsum.photos/seed/cashluanda/192/192',
+  'https://picsum.photos/seed/cashluanda/512/512'
 ];
 
 // Install Event
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Caching essential assets');
+      console.log('Caching assets');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -28,18 +29,16 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    })
   );
 });
 
 // Fetch Event
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests to avoid CORS issues in cache
-  if (!event.request.url.startsWith(self.location.origin)) return;
-
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request).catch(() => {
+        // Fallback for offline if needed
         if (event.request.mode === 'navigate') {
           return caches.match('/');
         }

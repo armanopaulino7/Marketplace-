@@ -68,6 +68,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
     }
 
     switch (profile?.role) {
+      case 'admin':
       case 'adm':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -82,6 +83,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'auditoria', label: 'Auditoria', icon: History },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
+      case 'producer':
       case 'produtor':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -98,6 +100,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'carteira', label: 'Carteira', icon: Wallet },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
+      case 'affiliate':
       case 'afiliado':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -112,6 +115,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           { id: 'carteira', label: 'Carteira', icon: Wallet },
           { id: 'perfil', label: 'Perfil', icon: User },
         ];
+      case 'customer':
       case 'cliente':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
