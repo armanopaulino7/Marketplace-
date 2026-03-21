@@ -176,6 +176,17 @@ export default function WalletCard({ hideWithdraw = false }: WalletCardProps) {
               </h2>
             </div>
           </div>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center">
+              <Clock className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Saldo Pendente</p>
+              <h2 className="text-xl font-black text-stone-900 dark:text-white">
+                {wallet?.pending_balance.toLocaleString() || '0,00'} Kz
+              </h2>
+            </div>
+          </div>
           {!hideWithdraw && (
             <button 
               onClick={() => setShowWithdrawModal(true)}

@@ -190,32 +190,37 @@ export default function AdminDashboard() {
 
       // If status is being updated to 'completed' and it wasn't completed before
       if (status === 'completed' && order.status !== 'completed') {
-        console.log('Order marked as completed:', order);
+        console.log('Order marked as completed, processing funds:', order);
         
         // Process funds when order is completed
         try {
           // 1. Process Producer Funds
-          if (order.producer_id && order.producer_commission > 0) {
-            await supabase.rpc('process_sale_funds', {
+          if (order.producer_id && Number(order.producer_commission) > 0) {
+            console.log(`Processing producer funds: ${order.producer_commission} for ${order.producer_id}`);
+            const { error: pErr } = await supabase.rpc('process_sale_funds', {
               user_id_param: order.producer_id,
-              amount_param: order.producer_commission,
+              amount_param: Number(order.producer_commission),
               description_param: `Venda concluída: ${order.produtos?.name}`,
               days_to_release: 0
             });
+            if (pErr) throw new Error(`Erro Produtor: ${pErr.message}`);
           }
 
           // 2. Process Affiliate Funds
-          if (order.affiliate_id && order.commission_amount > 0) {
-            await supabase.rpc('process_sale_funds', {
+          if (order.affiliate_id && Number(order.commission_amount) > 0) {
+            console.log(`Processing affiliate funds: ${order.commission_amount} for ${order.affiliate_id}`);
+            const { error: aErr } = await supabase.rpc('process_sale_funds', {
               user_id_param: order.affiliate_id,
-              amount_param: order.commission_amount,
+              amount_param: Number(order.commission_amount),
               description_param: `Comissão de afiliado concluída: ${order.produtos?.name}`,
               days_to_release: 0
             });
+            if (aErr) throw new Error(`Erro Afiliado: ${aErr.message}`);
           }
 
           // 3. Process Platform Fee (Admin)
-          if (order.platform_fee > 0) {
+          if (Number(order.platform_fee) > 0) {
+            console.log(`Processing platform fee: ${order.platform_fee}`);
             // Find an admin to receive the fee
             const { data: adminUser } = await supabase
               .from('profiles')
@@ -225,16 +230,20 @@ export default function AdminDashboard() {
               .single();
 
             if (adminUser) {
-              await supabase.rpc('process_sale_funds', {
+              const { error: admErr } = await supabase.rpc('process_sale_funds', {
                 user_id_param: adminUser.id,
-                amount_param: order.platform_fee,
+                amount_param: Number(order.platform_fee),
                 description_param: `Taxa de plataforma: ${order.produtos?.name}`,
                 days_to_release: 0
               });
+              if (admErr) throw new Error(`Erro Admin: ${admErr.message}`);
             }
           }
-        } catch (fundErr) {
+          console.log('All funds processed successfully');
+        } catch (fundErr: any) {
           console.error('Error processing funds on completion:', fundErr);
+          alert('Atenção: O pedido foi marcado como concluído, mas houve um erro ao processar os saldos: ' + fundErr.message);
+          // We don't return here because we still want to send notifications
         }
         
         if (order.producer_id) {
