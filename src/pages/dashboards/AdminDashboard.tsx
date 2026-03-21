@@ -118,7 +118,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (user && (profile?.role === 'admin' || profile?.role === 'adm')) {
+    if (user && profile?.role === 'adm') {
       if (activeTab === 'home') {
         fetchProducts();
       }
@@ -192,9 +192,50 @@ export default function AdminDashboard() {
       if (status === 'completed' && order.status !== 'completed') {
         console.log('Order marked as completed:', order);
         
-        // Note: Funds are now processed immediately at checkout in Checkout.tsx
-        // to satisfy the requirement of being available immediately for withdrawal.
-        // We only send the confirmation notification here.
+        // Process funds when order is completed
+        try {
+          // 1. Process Producer Funds
+          if (order.producer_id && order.producer_commission > 0) {
+            await supabase.rpc('process_sale_funds', {
+              user_id_param: order.producer_id,
+              amount_param: order.producer_commission,
+              description_param: `Venda concluída: ${order.produtos?.name}`,
+              days_to_release: 0
+            });
+          }
+
+          // 2. Process Affiliate Funds
+          if (order.affiliate_id && order.commission_amount > 0) {
+            await supabase.rpc('process_sale_funds', {
+              user_id_param: order.affiliate_id,
+              amount_param: order.commission_amount,
+              description_param: `Comissão de afiliado concluída: ${order.produtos?.name}`,
+              days_to_release: 0
+            });
+          }
+
+          // 3. Process Platform Fee (Admin)
+          if (order.platform_fee > 0) {
+            // Find an admin to receive the fee
+            const { data: adminUser } = await supabase
+              .from('profiles')
+              .select('id')
+              .or('role.eq.admin,role.eq.adm')
+              .limit(1)
+              .single();
+
+            if (adminUser) {
+              await supabase.rpc('process_sale_funds', {
+                user_id_param: adminUser.id,
+                amount_param: order.platform_fee,
+                description_param: `Taxa de plataforma: ${order.produtos?.name}`,
+                days_to_release: 0
+              });
+            }
+          }
+        } catch (fundErr) {
+          console.error('Error processing funds on completion:', fundErr);
+        }
         
         if (order.producer_id) {
           await createNotification(
@@ -672,10 +713,10 @@ export default function AdminDashboard() {
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={[
-                      { name: 'Admins', total: users.filter(u => u.role === 'admin' || u.role === 'adm').length },
-                      { name: 'Produtores', total: users.filter(u => u.role === 'producer' || u.role === 'produtor').length },
-                      { name: 'Afiliados', total: users.filter(u => u.role === 'affiliate' || u.role === 'afiliado').length },
-                      { name: 'Clientes', total: users.filter(u => u.role === 'customer' || u.role === 'cliente').length },
+                      { name: 'Admins', total: users.filter(u => u.role === 'adm').length },
+                      { name: 'Produtores', total: users.filter(u => u.role === 'produtor').length },
+                      { name: 'Afiliados', total: users.filter(u => u.role === 'afiliado').length },
+                      { name: 'Clientes', total: users.filter(u => u.role === 'cliente').length },
                     ]}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                       <XAxis 

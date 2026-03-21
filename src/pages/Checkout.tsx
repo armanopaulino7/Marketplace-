@@ -226,47 +226,9 @@ export default function Checkout() {
         }
       }
 
-      // 5. Process funds immediately so they appear as available for withdrawal
-      try {
-        // 5.1 Process Producer Funds
-        await supabase.rpc('process_sale_funds', {
-          user_id_param: product.producer_id,
-          amount_param: producerAmount,
-          description_param: `Venda: ${product.name}`,
-          days_to_release: 0
-        });
-
-        // 5.2 Process Affiliate Funds (if applicable)
-        if (ref && affiliateCommission > 0) {
-          await supabase.rpc('process_sale_funds', {
-            user_id_param: ref,
-            amount_param: affiliateCommission,
-            description_param: `Comissão de Afiliado: ${product.name}`,
-            days_to_release: 0
-          });
-        }
-
-        // 5.3 Process Admin Commission (Platform Fee)
-        // Fetch the first admin user to receive the fee
-        const { data: adminUser } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('role', 'adm')
-          .limit(1)
-          .single();
-
-        if (adminUser) {
-          await supabase.rpc('process_sale_funds', {
-            user_id_param: adminUser.id,
-            amount_param: platformFee,
-            description_param: `Taxa de Plataforma: ${product.name}`,
-            days_to_release: 0
-          });
-        }
-      } catch (fundError) {
-        console.error('Error processing initial funds:', fundError);
-      }
-
+      // Note: Funds are now processed in AdminDashboard.tsx when the order is marked as 'completed'
+      // to ensure they are only released after payment verification.
+      
       setSuccess(true);
     } catch (err: any) {
       console.error('Error processing purchase:', err);
