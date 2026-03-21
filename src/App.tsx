@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Component, ReactNode } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { CartProvider } from './contexts/CartContext';
@@ -68,6 +68,49 @@ function NetworkError() {
   );
 }
 
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('App Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center">
+            <h1 className="text-2xl font-bold text-stone-900 mb-4">Ops! Algo deu errado.</h1>
+            <p className="text-stone-600 mb-6">Ocorreu um erro inesperado. Por favor, tente recarregar a página.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all"
+            >
+              Recarregar Página
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [hasNetworkError, setHasNetworkError] = useState(false);
 
@@ -91,54 +134,56 @@ export default function App() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <CartProvider>
-          <Router>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Marketplace />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/checkout/:id" element={<Checkout />} />
-              
-              {/* Protected Dashboard Routes */}
-              <Route path="/dashboard/adm" element={
-                <ProtectedRoute allowedRoles={['adm']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/dashboard/produtor" element={
-                <ProtectedRoute allowedRoles={['produtor']}>
-                  <ProducerDashboard />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/dashboard/afiliado" element={
-                <ProtectedRoute allowedRoles={['afiliado']}>
-                  <AffiliateDashboard />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/dashboard/cliente" element={
-                <ProtectedRoute allowedRoles={['cliente']}>
-                  <CustomerDashboard />
-                </ProtectedRoute>
-              } />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <CartProvider>
+            <Router>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Marketplace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/checkout/:id" element={<Checkout />} />
+                
+                {/* Protected Dashboard Routes */}
+                <Route path="/dashboard/adm" element={
+                  <ProtectedRoute allowedRoles={['adm']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/dashboard/produtor" element={
+                  <ProtectedRoute allowedRoles={['produtor']}>
+                    <ProducerDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/dashboard/afiliado" element={
+                  <ProtectedRoute allowedRoles={['afiliado']}>
+                    <AffiliateDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/dashboard/cliente" element={
+                  <ProtectedRoute allowedRoles={['cliente']}>
+                    <CustomerDashboard />
+                  </ProtectedRoute>
+                } />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
-        </CartProvider>
-      </NotificationProvider>
-    </AuthProvider>
-  </ThemeProvider>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Router>
+          </CartProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </ThemeProvider>
+    </ErrorBoundary>
   );
 }

@@ -18,8 +18,7 @@ window.addEventListener('unhandledrejection', (event) => {
         localStorage.removeItem(key);
       }
     });
-    // Optional: reload to clear memory state
-    window.location.reload();
+    // Don't reload automatically to avoid loops, just let the app handle the null user
   }
 });
 
