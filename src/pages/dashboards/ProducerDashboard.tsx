@@ -491,7 +491,7 @@ export default function ProducerDashboard() {
   };
 
   const handleAddImage = (url: string) => {
-    if (formData.imagens.length >= 5) return;
+    if (formData.imagens.length >= 10) return;
     setFormData(prev => ({
       ...prev,
       imagens: [...prev.imagens, url]
@@ -1190,13 +1190,13 @@ export default function ProducerDashboard() {
                         required
                         type="number" 
                         min="0"
-                        max="50"
+                        max="100"
                         value={formData.commission_rate}
                         onChange={e => setFormData({...formData, commission_rate: e.target.value})}
                         placeholder="Ex: 10"
                         className="w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                       />
-                      <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1 italic">Máximo permitido: 50%</p>
+                      <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1 italic">Máximo permitido: 100%</p>
                     </div>
 
                     {formData.price && (
@@ -1226,7 +1226,7 @@ export default function ProducerDashboard() {
                 </div>
 
                 <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-6">
-                  <h2 className="text-lg font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">Imagens (1 a 5) *</h2>
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800 pb-4">Imagens (1 a 10) *</h2>
                   
                   <ImageUpload 
                     onUpload={handleAddImage} 

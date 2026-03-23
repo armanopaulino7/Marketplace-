@@ -1630,7 +1630,7 @@ function ProductDetailsModal({ product, onClose, onAction }: { product: any, onC
                 )}
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {product.imagens?.slice(1, 5).map((img: string, i: number) => (
+                {product.imagens?.slice(1, 10).map((img: string, i: number) => (
                   <div key={i} className="aspect-square bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden">
                     <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
