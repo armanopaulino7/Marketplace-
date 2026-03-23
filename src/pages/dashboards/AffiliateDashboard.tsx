@@ -21,7 +21,8 @@ import {
   Search,
   ArrowRight,
   LogOut,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -317,6 +318,30 @@ export default function AffiliateDashboard() {
     }
   };
 
+  const handleRemoveAffiliation = async (affiliationId: string) => {
+    if (!window.confirm('Tem certeza que deseja remover esta afiliação?')) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('affiliations')
+        .delete()
+        .eq('id', affiliationId);
+
+      if (error) throw error;
+      
+      setSuccess('Afiliação removida com sucesso!');
+      await Promise.all([
+        fetchMyAffiliations(),
+        fetchAvailableProducts()
+      ]);
+    } catch (err: any) {
+      console.error('Error removing affiliation:', err);
+      alert(err.message || 'Erro ao remover afiliação.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
@@ -507,10 +532,7 @@ export default function AffiliateDashboard() {
                       </div>
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            setShowDetailsModal(true);
-                          }}
+                          onClick={() => navigate(`/product/${product.id}`)}
                           className="flex-1 py-3 border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 rounded-2xl font-bold text-sm hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
                         >
                           Detalhes
@@ -614,6 +636,13 @@ export default function AffiliateDashboard() {
                       </a>
                       <button className="flex-1 py-2.5 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 rounded-xl font-bold text-xs hover:bg-stone-50 dark:hover:bg-stone-800 transition-all">
                         Material de Apoio
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveAffiliation(aff.id)}
+                        className="p-2.5 border border-rose-200 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all flex items-center justify-center"
+                        title="Remover Afiliação"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>

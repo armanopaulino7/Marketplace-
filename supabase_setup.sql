@@ -218,6 +218,10 @@ USING (affiliate_id = auth.uid() OR (SELECT producer_id FROM public.produtos WHE
 CREATE POLICY "affiliations_insert_policy" ON public.affiliations FOR INSERT 
 WITH CHECK (affiliate_id = auth.uid());
 
+DROP POLICY IF EXISTS "affiliations_delete_policy" ON public.affiliations;
+CREATE POLICY "affiliations_delete_policy" ON public.affiliations FOR DELETE 
+USING (affiliate_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
+
 -- 4. ORDERS POLICIES
 DROP POLICY IF EXISTS "orders_select_policy" ON public.orders;
 DROP POLICY IF EXISTS "orders_insert_policy" ON public.orders;
