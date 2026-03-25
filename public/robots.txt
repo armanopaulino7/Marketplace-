@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://cashluanda.vercel.app/sitemap.xml
