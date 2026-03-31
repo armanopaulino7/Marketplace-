@@ -569,7 +569,7 @@ export default function AdminDashboard() {
         const title = status === 'approved' ? 'Produto Aprovado!' : 'Produto Rejeitado';
         const message = status === 'approved' 
           ? `Seu produto "${product.name}" foi aprovado e já está disponível na loja.`
-          : `Seu produto "${product.name}" foi rejeitado pela administração.${reason ? ` Motivo: ${reason}` : ''}`;
+          : `Seu produto "${product.name}" foi rejeitado pela administração.${reason ? `\n\nMotivo da rejeição: ${reason}` : ''}`;
 
         await createNotification(
           product.producer_id,

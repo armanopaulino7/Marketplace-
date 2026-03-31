@@ -318,35 +318,37 @@ export default function ProductDetails() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+              <div className="flex items-center gap-3 mb-2 p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-100 dark:border-stone-800">
+                <div className="h-12 w-12 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden border-2 border-white dark:border-stone-900 shadow-sm">
                   {product.profiles?.avatar_url ? (
                     <img src={product.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs font-bold">
-                      {product.profiles?.full_name?.[0] || 'P'}
+                    <div className="w-full h-full flex items-center justify-center text-stone-500 dark:text-stone-400 text-lg font-bold">
+                      {product.profiles?.full_name?.[0] || product.profiles?.email?.[0]?.toUpperCase() || 'P'}
                     </div>
                   )}
                 </div>
-                <div className="text-sm font-bold text-stone-600 dark:text-stone-400 flex items-center gap-1.5">
-                  Vendido por: <span className="text-stone-900 dark:text-white">{product.profiles?.full_name || product.profiles?.email || 'Produtor'}</span>
-                  {product.profiles?.is_verified && (
-                    <span className="flex items-center gap-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                      <ShieldCheck className="h-3 w-3" />
-                      Verificado
+                <div className="flex flex-col">
+                  <span className="text-xs text-stone-500 dark:text-stone-400 font-medium uppercase tracking-widest mb-0.5">Vendido por</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-bold text-stone-900 dark:text-white">
+                      {product.profiles?.full_name || product.profiles?.email?.split('@')[0] || 'Produtor'}
                     </span>
-                  )}
-                  {isOnline(product.profiles?.last_seen) ? (
-                    <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-2">
-                      <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse block" />
-                      Online
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-2">
-                      <span className="h-2 w-2 bg-stone-300 dark:bg-stone-700 rounded-full block" />
-                      Offline
-                    </span>
-                  )}
+                    {product.profiles?.is_verified && (
+                      <span className="flex items-center gap-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest" title="Vendedor Verificado">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    {isOnline(product.profiles?.last_seen) ? (
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-1" title="Online Agora">
+                        <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse block" />
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1" title="Offline">
+                        <span className="h-2 w-2 bg-stone-300 dark:bg-stone-700 rounded-full block" />
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               

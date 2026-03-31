@@ -203,7 +203,7 @@ export function NotificationBell() {
                           <p className="text-sm font-bold text-stone-900 dark:text-white leading-tight mb-1">
                             {n.title}
                           </p>
-                          <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2 mb-2">
+                          <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-4 mb-2 whitespace-pre-wrap">
                             {n.message}
                           </p>
                           <div className="flex items-center justify-between">
