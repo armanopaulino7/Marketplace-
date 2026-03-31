@@ -208,6 +208,17 @@ export default function Checkout() {
         '/dashboard/cliente'
       );
 
+      // 1.3 Notify Affiliate (if any)
+      if (ref) {
+        await createNotification(
+          ref,
+          'Nova Indicação de Venda!',
+          `Alguém comprou ${qty}x ${product.name} através do seu link. Aguarde a conclusão do pedido para receber sua comissão.`,
+          'commission',
+          '/dashboard/afiliado'
+        );
+      }
+
       // 2. Decrement Product Quantity (Atomic)
       const { error: updateError } = await supabase
         .rpc('decrement_product_stock', {

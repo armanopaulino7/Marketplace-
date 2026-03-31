@@ -48,18 +48,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           const newNotif = payload.new;
           
           // Show Toast notification (In-app)
-          toast.success(`${newNotif.title}\n${newNotif.message}`, {
-            duration: 5000,
-            position: 'top-right',
-            icon: '🔔',
-            style: {
-              borderRadius: '16px',
-              background: '#1c1917',
-              color: '#fff',
-              fontSize: '14px',
-              fontWeight: 'bold',
-            },
-          });
+          toast.success(
+            (t) => (
+              <div 
+                onClick={() => {
+                  if (newNotif.link) {
+                    window.location.href = newNotif.link;
+                  }
+                  toast.dismiss(t.id);
+                }}
+                className="cursor-pointer"
+              >
+                <p className="font-bold">{newNotif.title}</p>
+                <p className="text-xs opacity-80">{newNotif.message}</p>
+              </div>
+            ),
+            {
+              duration: 5000,
+              position: 'top-right',
+              icon: '🔔',
+              style: {
+                borderRadius: '16px',
+                background: '#1c1917',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 'bold',
+              },
+            }
+          );
 
           // Show Browser notification (if granted)
           if (permission === 'granted') {

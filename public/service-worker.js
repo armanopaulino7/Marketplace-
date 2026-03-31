@@ -66,18 +66,23 @@ self.addEventListener('push', function(event) {
 // Notification Click Event
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  const link = event.notification.data.link;
+  const link = event.notification.data.link || '/';
+  const urlToOpen = new URL(link, self.location.origin).href;
   
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then(function(clientList) {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url === link && 'focus' in client) {
+        // Check if the client's URL matches the target URL (ignoring trailing slashes)
+        const clientUrl = new URL(client.url).href.replace(/\/$/, '');
+        const targetUrl = new URL(urlToOpen).href.replace(/\/$/, '');
+        
+        if (clientUrl === targetUrl && 'focus' in client) {
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(link);
+        return clients.openWindow(urlToOpen);
       }
     })
   );

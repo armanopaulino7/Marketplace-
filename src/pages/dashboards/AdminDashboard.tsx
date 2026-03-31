@@ -173,7 +173,7 @@ export default function AdminDashboard() {
       await createNotification(
         order.customer_id,
         'Status do Pedido Atualizado',
-        `Seu pedido de ${order.produtos?.name} agora está: ${status === 'completed' ? 'Concluído' : status === 'cancelled' ? 'Cancelado' : status === 'shipped' ? 'Enviado' : status}`,
+        `Seu pedido de ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name} agora está: ${status === 'completed' ? 'Concluído' : status === 'cancelled' ? 'Cancelado' : status === 'shipped' ? 'Enviado' : status}`,
         'order_status',
         '/dashboard/cliente'
       );
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
             const { error: pErr } = await supabase.rpc('process_sale_funds', {
               user_id_param: order.producer_id,
               amount_param: Number(order.producer_commission),
-              description_param: `Venda concluída: ${order.produtos?.name}`,
+              description_param: `Venda concluída: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
               days_to_release: 0
             });
             if (pErr) throw new Error(`Erro Produtor: ${pErr.message}`);
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
             const { error: aErr } = await supabase.rpc('process_sale_funds', {
               user_id_param: order.affiliate_id,
               amount_param: Number(order.commission_amount),
-              description_param: `Comissão de afiliado concluída: ${order.produtos?.name}`,
+              description_param: `Comissão de afiliado concluída: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
               days_to_release: 0
             });
             if (aErr) throw new Error(`Erro Afiliado: ${aErr.message}`);
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
               const { error: admErr } = await supabase.rpc('process_sale_funds', {
                 user_id_param: adminUser.id,
                 amount_param: Number(order.platform_fee),
-                description_param: `Taxa de plataforma: ${order.produtos?.name}`,
+                description_param: `Taxa de plataforma: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
                 days_to_release: 0
               });
               if (admErr) throw new Error(`Erro Admin: ${admErr.message}`);
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
           await createNotification(
             order.producer_id,
             'Pedido Concluído',
-            `O pedido do produto ${order.produtos?.name} foi marcado como concluído.`,
+            `O pedido do produto ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name} foi marcado como concluído.`,
             'sale',
             '/dashboard/produtor'
           );
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
           await createNotification(
             order.affiliate_id,
             'Venda de Afiliado Concluída',
-            `A venda do produto ${order.produtos?.name} que você indicou foi concluída.`,
+            `A venda do produto ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name} que você indicou foi concluída.`,
             'commission',
             '/dashboard/afiliado'
           );
@@ -896,7 +896,7 @@ export default function AdminDashboard() {
                               )}
                             </div>
                             <div>
-                              <div className="font-bold text-stone-900 dark:text-white text-sm">{order.produtos?.name}</div>
+                              <div className="font-bold text-stone-900 dark:text-white text-sm">{Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}</div>
                               <div className="text-[10px] text-stone-400">
                                 Qtd: {order.quantity || 1} • Entrega: {new Date(order.delivery_date).toLocaleDateString()}
                               </div>

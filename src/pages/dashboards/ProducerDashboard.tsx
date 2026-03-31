@@ -34,6 +34,7 @@ import {
 } from 'recharts';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { createNotification } from '../../lib/notifications';
 import { useAuth } from '../../contexts/AuthContext';
 import WalletCard from '../../components/WalletCard';
 import ImageUpload from '../../components/ImageUpload';
@@ -412,6 +413,13 @@ export default function ProducerDashboard() {
 
   const handleAffiliationRequest = async (id: string, status: 'approved' | 'rejected') => {
     try {
+      // Get affiliate_id and product_id to notify BEFORE update
+      const { data: aff } = await supabase
+        .from('affiliations')
+        .select('affiliate_id, product_id, produtos(name)')
+        .eq('id', id)
+        .single();
+
       const { error } = await supabase
         .from('affiliations')
         .update({ status })
@@ -419,6 +427,16 @@ export default function ProducerDashboard() {
 
       if (error) throw error;
       
+      if (aff) {
+        await createNotification(
+          aff.affiliate_id,
+          status === 'approved' ? 'Afiliação Aprovada!' : 'Afiliação Rejeitada',
+          `Sua solicitação para o produto "${Array.isArray(aff.produtos) ? (aff.produtos as any)[0]?.name : (aff.produtos as any)?.name}" foi ${status === 'approved' ? 'aprovada' : 'rejeitada'}.`,
+          'product',
+          '/dashboard/afiliado'
+        );
+      }
+
       fetchPendingAffiliations();
       fetchAffiliates();
       fetchStats();

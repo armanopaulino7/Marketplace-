@@ -3,6 +3,7 @@ import { MessageSquare, Send, X, Search, User, Check, CheckCheck, Plus } from 'l
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { cn, isOnline } from '../lib/utils';
+import { createNotification } from '../lib/notifications';
 import { format } from 'date-fns';
 
 interface Message {
@@ -232,6 +233,15 @@ export function ChatSystem() {
       setMessages(prev => [...prev, data]);
       setNewMessage('');
       fetchContacts();
+
+      // Create notification for receiver
+      await createNotification(
+        selectedContact.id,
+        'Nova Mensagem',
+        `${user?.user_metadata?.full_name || 'Alguém'} enviou uma mensagem para você.`,
+        'system',
+        '/dashboard/cliente' // Defaulting to customer dashboard, but most users will have a dashboard
+      );
     }
     setIsSending(false);
   };
