@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS public.produtos (
   imagens TEXT[] DEFAULT '{}',
   variations JSONB DEFAULT '{"tamanho": [], "peso": [], "cor": []}',
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  rejection_reason TEXT,
   condition TEXT DEFAULT 'Novo' CHECK (condition IN ('Novo', 'Usado')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

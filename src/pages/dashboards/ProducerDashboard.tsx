@@ -1439,6 +1439,15 @@ export default function ProducerDashboard() {
                         <h3 className="font-bold text-stone-900 dark:text-white line-clamp-1">{product.name}</h3>
                         <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{product.category} • {product.subcategory}</p>
                       </div>
+                      {product.status === 'rejected' && product.rejection_reason && (
+                        <div className="mt-2 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 rounded-2xl flex items-start gap-2 text-xs text-rose-600 dark:text-rose-400 animate-in slide-in-from-top-2 duration-300">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="font-bold uppercase tracking-widest">Motivo da Rejeição:</p>
+                            <p className="leading-relaxed">{product.rejection_reason}</p>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <div className="text-lg font-bold text-stone-900 dark:text-white">
                           {product.price.toLocaleString()} Kz

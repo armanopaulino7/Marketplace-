@@ -21,7 +21,8 @@ import {
   Search,
   ArrowRight,
   LogOut,
-  DollarSign
+  DollarSign,
+  X
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -52,6 +53,9 @@ export default function AdminDashboard() {
   const [pendingProducts, setPendingProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionProductId, setRejectionProductId] = useState<string | null>(null);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
   const [deliveryFees, setDeliveryFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -540,11 +544,16 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleProductAction = async (productId: string, status: 'approved' | 'rejected') => {
+  const handleProductAction = async (productId: string, status: 'approved' | 'rejected', reason?: string) => {
     try {
+      const updateData: any = { status };
+      if (status === 'rejected' && reason) {
+        updateData.rejection_reason = reason;
+      }
+
       const { error } = await supabase
         .from('produtos')
-        .update({ status })
+        .update(updateData)
         .eq('id', productId);
 
       if (error) throw error;
@@ -557,10 +566,15 @@ export default function AdminDashboard() {
         .single();
 
       if (product) {
+        const title = status === 'approved' ? 'Produto Aprovado!' : 'Produto Rejeitado';
+        const message = status === 'approved' 
+          ? `Seu produto "${product.name}" foi aprovado e já está disponível na loja.`
+          : `Seu produto "${product.name}" foi rejeitado pela administração.${reason ? ` Motivo: ${reason}` : ''}`;
+
         await createNotification(
           product.producer_id,
-          status === 'approved' ? 'Produto Aprovado!' : 'Produto Rejeitado',
-          `Seu produto "${product.name}" foi ${status === 'approved' ? 'aprovado e já está disponível na loja' : 'rejeitado pela administração'}.`,
+          title,
+          message,
           'product',
           '/dashboard/produtor'
         );
@@ -568,6 +582,9 @@ export default function AdminDashboard() {
 
       setPendingProducts(prev => prev.filter(p => p.id !== productId));
       fetchStats();
+      setShowRejectionModal(false);
+      setRejectionReason('');
+      setRejectionProductId(null);
     } catch (err: any) {
       console.error(`Error ${status} product:`, err);
       alert(`Erro ao ${status === 'approved' ? 'aprovar' : 'rejeitar'} produto: ` + (err.message || 'Erro desconhecido'));
@@ -1119,7 +1136,10 @@ export default function AdminDashboard() {
                         Aprovar
                       </button>
                       <button 
-                        onClick={() => handleProductAction(product.id, 'rejected')}
+                        onClick={() => {
+                          setRejectionProductId(product.id);
+                          setShowRejectionModal(true);
+                        }}
                         className="flex-1 sm:flex-none px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all"
                       >
                         Recusar
@@ -1599,11 +1619,79 @@ export default function AdminDashboard() {
   return (
     <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
       {renderContent()}
+      
+      {/* Rejection Modal */}
+      {showRejectionModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-stone-900 dark:text-white">Motivo da Rejeição</h2>
+                <button 
+                  onClick={() => {
+                    setShowRejectionModal(false);
+                    setRejectionReason('');
+                    setRejectionProductId(null);
+                  }}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors"
+                >
+                  <X className="h-6 w-6 text-stone-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-stone-500 dark:text-stone-400 text-sm">
+                  Por favor, informe o motivo pelo qual este produto está sendo rejeitado. Esta mensagem será enviada ao produtor.
+                </p>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Ex: Imagens de baixa qualidade, descrição incompleta..."
+                  className="w-full h-32 px-4 py-3 bg-stone-50 dark:bg-stone-800 border-none rounded-2xl text-stone-900 dark:text-white placeholder-stone-400 focus:ring-2 focus:ring-indigo-600 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => {
+                    setShowRejectionModal(false);
+                    setRejectionReason('');
+                    setRejectionProductId(null);
+                  }}
+                  className="flex-1 px-6 py-4 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    if (rejectionProductId) {
+                      handleProductAction(rejectionProductId, 'rejected', rejectionReason);
+                    }
+                  }}
+                  disabled={!rejectionReason.trim()}
+                  className="flex-1 px-6 py-4 bg-rose-600 text-white rounded-2xl font-bold hover:bg-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-600/20"
+                >
+                  Confirmar Rejeição
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDetailsModal && (
         <ProductDetailsModal 
           product={selectedProduct} 
           onClose={() => setShowDetailsModal(false)}
-          onAction={handleProductAction}
+          onAction={(id, status) => {
+            if (status === 'rejected') {
+              setRejectionProductId(id);
+              setShowRejectionModal(true);
+              setShowDetailsModal(false);
+            } else {
+              handleProductAction(id, status);
+            }
+          }}
         />
       )}
     </Layout>
