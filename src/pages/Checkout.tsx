@@ -110,7 +110,7 @@ export default function Checkout() {
     try {
       const { data, error } = await supabase
         .from('produtos')
-        .select('*')
+        .select('*, profiles!producer_id(full_name, email)')
         .eq('id', id)
         .single();
 
@@ -460,6 +460,9 @@ export default function Checkout() {
                 </div>
                 <div>
                   <h3 className="font-bold text-stone-900 dark:text-white line-clamp-2">{product.name}</h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
+                    Vendido por: <span className="font-bold">{product.profiles?.full_name || product.profiles?.email || 'Produtor'}</span>
+                  </p>
                   <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{product.category} • Qtd: {qty}</p>
                 </div>
               </div>

@@ -138,7 +138,7 @@ export default function AdminDashboard() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, produtos(name, imagens)')
+        .select('*, produtos(name, imagens), producer:profiles!producer_id(full_name, email)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -871,6 +871,7 @@ export default function AdminDashboard() {
                     <tr className="bg-stone-50 dark:bg-stone-800/50 border-b border-stone-100 dark:border-stone-800">
                       <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Pedido / Cliente</th>
                       <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Produto</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Produtor</th>
                       <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Valor</th>
                       <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Pagamento</th>
                       <th className="px-6 py-4 text-[10px] font-bold text-stone-400 uppercase tracking-widest">Status</th>
@@ -902,6 +903,12 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-stone-900 dark:text-white">
+                            {order.producer?.full_name || order.producer?.email || 'N/A'}
+                          </div>
+                          <div className="text-[10px] text-stone-400">{order.producer?.email}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-bold text-stone-900 dark:text-white">{order.amount.toLocaleString()} Kz</div>

@@ -110,7 +110,7 @@ export default function CustomerDashboard() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, produtos(*)')
+        .select('*, produtos(*), producer:profiles!producer_id(full_name, email)')
         .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
       
@@ -442,7 +442,7 @@ export default function CustomerDashboard() {
                         <div>
                           <div className="font-bold text-stone-900">Pedido #{order.id.substring(0, 8).toUpperCase()}</div>
                           <p className="text-sm text-stone-500">
-                            {order.produtos?.name} • Qtd: {order.quantity || 1} • {new Date(order.created_at).toLocaleDateString()}
+                            {order.produtos?.name} • Produtor: {order.producer?.full_name || order.producer?.email || 'N/A'} • Qtd: {order.quantity || 1} • {new Date(order.created_at).toLocaleDateString()}
                           </p>
                           <div className="mt-1 flex items-center gap-2">
                             <span className={cn(

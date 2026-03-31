@@ -32,7 +32,7 @@ export default function Marketplace() {
     try {
       const { data, error } = await supabase
         .from('produtos')
-        .select('*')
+        .select('*, profiles!producer_id(full_name, email)')
         .eq('status', 'approved')
         .gt('quantity', 0)
         .order('created_at', { ascending: false });
@@ -132,9 +132,12 @@ export default function Marketplace() {
                       </div>
                     </div>
                     <div className="p-5 flex-1 flex flex-col">
-                      <h3 className="font-bold text-stone-900 dark:text-white mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1 cursor-pointer" onClick={() => navigate(`/product/${product.id}`)}>
+                      <h3 className="font-bold text-stone-900 dark:text-white mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1 cursor-pointer" onClick={() => navigate(`/product/${product.id}`)}>
                         {product.name}
                       </h3>
+                      <div className="text-[10px] text-stone-400 mb-2">
+                        Vendido por: <span className="font-bold">{product.profiles?.full_name || product.profiles?.email || 'Produtor'}</span>
+                      </div>
                       <p className="text-xs text-stone-500 line-clamp-2 mb-4 h-8">{product.description}</p>
                       
                       <div className="flex items-center gap-1 text-amber-400 mb-4">
