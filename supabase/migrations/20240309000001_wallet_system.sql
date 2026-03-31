@@ -49,7 +49,7 @@ CREATE POLICY "Users can view their own transactions" ON public.wallet_transacti
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM public.wallets
-            WHERE id = wallet_transactions.wallet_id AND user_id = auth.uid()
+            WHERE public.wallets.id = wallet_transactions.wallet_id AND public.wallets.user_id = auth.uid()
         )
     );
 

@@ -275,7 +275,7 @@ CREATE POLICY "wallet_transactions_select_policy" ON public.wallet_transactions 
 USING (
   EXISTS (
     SELECT 1 FROM public.wallets
-    WHERE id = wallet_transactions.wallet_id AND (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'))
+    WHERE public.wallets.id = wallet_transactions.wallet_id AND (public.wallets.user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'))
   )
 );
 

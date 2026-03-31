@@ -56,6 +56,10 @@ export default function AdminDashboard() {
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionProductId, setRejectionProductId] = useState<string | null>(null);
+
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalMessage, setApprovalMessage] = useState('');
+  const [approvalProductId, setApprovalProductId] = useState<string | null>(null);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
   const [deliveryFees, setDeliveryFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -568,7 +572,7 @@ export default function AdminDashboard() {
       if (product) {
         const title = status === 'approved' ? 'Produto Aprovado!' : 'Produto Rejeitado';
         const message = status === 'approved' 
-          ? `Seu produto "${product.name}" foi aprovado e já está disponível na loja.`
+          ? `Seu produto "${product.name}" foi aprovado e já está disponível na loja.${reason ? `\n\nMensagem da administração: ${reason}` : ''}`
           : `Seu produto "${product.name}" foi rejeitado pela administração.${reason ? `\n\nMotivo da rejeição: ${reason}` : ''}`;
 
         await createNotification(
@@ -585,6 +589,9 @@ export default function AdminDashboard() {
       setShowRejectionModal(false);
       setRejectionReason('');
       setRejectionProductId(null);
+      setShowApprovalModal(false);
+      setApprovalMessage('');
+      setApprovalProductId(null);
     } catch (err: any) {
       console.error(`Error ${status} product:`, err);
       alert(`Erro ao ${status === 'approved' ? 'aprovar' : 'rejeitar'} produto: ` + (err.message || 'Erro desconhecido'));
@@ -1130,7 +1137,10 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
                       <button 
-                        onClick={() => handleProductAction(product.id, 'approved')}
+                        onClick={() => {
+                          setApprovalProductId(product.id);
+                          setShowApprovalModal(true);
+                        }}
                         className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all"
                       >
                         Aprovar
@@ -1679,6 +1689,64 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Approval Modal */}
+      {showApprovalModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-stone-900 dark:text-white">Aprovar Produto</h2>
+                <button 
+                  onClick={() => {
+                    setShowApprovalModal(false);
+                    setApprovalMessage('');
+                    setApprovalProductId(null);
+                  }}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors"
+                >
+                  <X className="h-6 w-6 text-stone-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-stone-500 dark:text-stone-400 text-sm">
+                  Deseja enviar uma mensagem ao produtor junto com a aprovação? (Opcional)
+                </p>
+                <textarea
+                  value={approvalMessage}
+                  onChange={(e) => setApprovalMessage(e.target.value)}
+                  placeholder="Ex: Seu produto está ótimo, boas vendas!"
+                  className="w-full h-32 px-4 py-3 bg-stone-50 dark:bg-stone-800 border-none rounded-2xl text-stone-900 dark:text-white placeholder-stone-400 focus:ring-2 focus:ring-indigo-600 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => {
+                    setShowApprovalModal(false);
+                    setApprovalMessage('');
+                    setApprovalProductId(null);
+                  }}
+                  className="flex-1 px-6 py-4 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    if (approvalProductId) {
+                      handleProductAction(approvalProductId, 'approved', approvalMessage);
+                    }
+                  }}
+                  className="flex-1 px-6 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  Confirmar Aprovação
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDetailsModal && (
         <ProductDetailsModal 
           product={selectedProduct} 
@@ -1688,8 +1756,10 @@ export default function AdminDashboard() {
               setRejectionProductId(id);
               setShowRejectionModal(true);
               setShowDetailsModal(false);
-            } else {
-              handleProductAction(id, status);
+            } else if (status === 'approved') {
+              setApprovalProductId(id);
+              setShowApprovalModal(true);
+              setShowDetailsModal(false);
             }
           }}
         />

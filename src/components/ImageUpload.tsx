@@ -7,9 +7,10 @@ interface ImageUploadProps {
   label?: string;
   maxSize?: number; // in MB
   folder?: string;
+  accept?: string;
 }
 
-export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'produtos' }: ImageUploadProps) {
+export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'produtos', accept = 'image/*' }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,14 +82,16 @@ export default function ImageUpload({ onUpload, label, maxSize = 2, folder = 'pr
               <Upload className="h-6 w-6 text-stone-400 dark:text-stone-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
             </div>
             <p className="text-xs font-bold text-stone-500 dark:text-stone-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Clique para fazer upload</p>
-            <p className="text-[10px] text-stone-400 dark:text-stone-500">PNG, JPG ou WEBP até {maxSize}MB</p>
+            <p className="text-[10px] text-stone-400 dark:text-stone-500">
+              {accept === 'image/*' ? `PNG, JPG ou WEBP até ${maxSize}MB` : `Arquivo até ${maxSize}MB`}
+            </p>
           </>
         )}
         <input 
           type="file" 
           ref={fileInputRef}
           onChange={handleUpload}
-          accept="image/*"
+          accept={accept}
           className="hidden"
           disabled={uploading}
         />

@@ -3,6 +3,7 @@ import { FileText, Plus, Trash2, Download, X, Check, Video, Image as ImageIcon, 
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
+import ImageUpload from './ImageUpload';
 
 interface Material {
   id: string;
@@ -67,6 +68,10 @@ export function SupportMaterials({ mode = 'affiliate' }: { mode?: 'affiliate' | 
 
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fileUrl) {
+      alert('Por favor, faça o upload do arquivo ou insira a URL.');
+      return;
+    }
     setIsSubmitting(true);
 
     const { error } = await supabase
@@ -224,7 +229,10 @@ export function SupportMaterials({ mode = 'affiliate' }: { mode?: 'affiliate' | 
                   <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Tipo de Arquivo</label>
                   <select
                     value={fileType}
-                    onChange={(e) => setFileType(e.target.value as any)}
+                    onChange={(e) => {
+                      setFileType(e.target.value as any);
+                      setFileUrl('');
+                    }}
                     className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="image">Imagem</option>
@@ -234,15 +242,36 @@ export function SupportMaterials({ mode = 'affiliate' }: { mode?: 'affiliate' | 
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">URL do Arquivo</label>
-                  <input
-                    type="url"
-                    value={fileUrl}
-                    onChange={(e) => setFileUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
+                  <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Arquivo</label>
+                  {fileType === 'text' ? (
+                    <input
+                      type="url"
+                      value={fileUrl}
+                      onChange={(e) => setFileUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full bg-stone-50 dark:bg-stone-800 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  ) : (
+                    <div className="mt-1">
+                      <ImageUpload
+                        onUpload={setFileUrl}
+                        folder="support_materials"
+                        maxSize={50}
+                        accept={
+                          fileType === 'image' ? 'image/*' :
+                          fileType === 'video' ? 'video/*' :
+                          fileType === 'pdf' ? 'application/pdf' :
+                          '*/*'
+                        }
+                      />
+                      {fileUrl && (
+                        <p className="mt-2 text-xs text-green-600 dark:text-green-400 font-bold">
+                          Arquivo carregado com sucesso!
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
