@@ -37,7 +37,6 @@ export default function Marketplace() {
         .from('produtos')
         .select('*, profiles!producer_id(full_name, email)')
         .eq('status', 'approved')
-        .gt('quantity', 0)
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -46,19 +45,11 @@ export default function Marketplace() {
         return;
       }
       
-      console.log('Fetched products:', data?.length);
-      
-      const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
-      const filtered = (data || []).filter(p => {
-        const lowerName = (p.name || '').toLowerCase();
-        const lowerDesc = (p.description || '').toLowerCase();
-        const lowerCat = (p.category || '').toLowerCase();
-        return !forbiddenTerms.some(term => lowerName.includes(term) || lowerDesc.includes(term) || lowerCat.includes(term));
-      });
-      
-      setProducts(filtered);
-    } catch (err) {
+      console.log('Fetched products:', data?.length, data);
+      setProducts(data || []);
+    } catch (err: any) {
       console.error('Error fetching products:', err);
+      setError(`Erro inesperado: ${err.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
