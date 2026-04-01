@@ -677,7 +677,17 @@ export default function AdminDashboard() {
       alert(`Saque ${status === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso!`);
     } catch (err: any) {
       console.error(`Error ${status} withdrawal:`, err);
-      alert('Erro ao processar ação no saque: ' + (err.message || 'Erro desconhecido'));
+      let errorMessage = err.message || 'Erro desconhecido';
+      
+      // Check if it's a JSON error from our FirestoreErrorInfo pattern (even though this is Supabase, we can use a similar pattern if we want, but here it's just standard error)
+      if (err.details) {
+        errorMessage += ` (${err.details})`;
+      }
+      if (err.hint) {
+        errorMessage += ` Hint: ${err.hint}`;
+      }
+      
+      alert('Erro ao processar ação no saque: ' + errorMessage);
     }
   };
 

@@ -6,7 +6,8 @@ import {
   ArrowRight, 
   Package, 
   Star,
-  ShoppingCart
+  ShoppingCart,
+  AlertCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -20,6 +21,7 @@ export default function Marketplace() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { addToCart } = useCart();
 
@@ -29,17 +31,19 @@ export default function Marketplace() {
 
   const fetchProducts = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('produtos')
         .select('*, profiles!producer_id(full_name, email)')
         .eq('status', 'approved')
         .gt('quantity', 0)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Supabase error fetching products:', error);
-        throw error;
+      if (fetchError) {
+        console.error('Supabase error fetching products:', fetchError);
+        setError(`Erro ao carregar produtos: ${fetchError.message}`);
+        return;
       }
       
       console.log('Fetched products:', data?.length);
@@ -76,6 +80,22 @@ export default function Marketplace() {
           <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Marketplace</h1>
           <p className="text-stone-500">Encontre os melhores produtos em Luanda.</p>
         </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl text-red-700 dark:text-red-400 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-bold text-sm">Erro ao carregar produtos</p>
+              <p className="text-xs opacity-80">{error}</p>
+            </div>
+            <button 
+              onClick={() => fetchProducts()}
+              className="px-4 py-2 bg-red-100 dark:bg-red-900/40 rounded-xl text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        )}
 
         <div className="bg-white dark:bg-stone-900 p-8 sm:p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-6 shadow-sm">
           <div className="max-w-md mx-auto relative">
