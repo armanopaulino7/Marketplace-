@@ -33,23 +33,31 @@ export default function Marketplace() {
     setLoading(true);
     setError(null);
     try {
+      // Usamos a sintaxe mais direta possível para o Join
       const { data, error: fetchError } = await supabase
         .from('produtos')
-        .select('*, profiles!producer_id(full_name, email)')
+        .select('*, profiles(full_name, email)')
         .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
       if (fetchError) {
-        console.error('Supabase error fetching products:', fetchError);
-        setError(`Erro ao carregar produtos: ${fetchError.message}`);
-        return;
+        console.warn('Erro ao tentar Join, tentando busca simples...', fetchError);
+        
+        // Fallback: Busca apenas os produtos se o join falhar
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false });
+
+        if (simpleError) throw simpleError;
+        setProducts(simpleData || []);
+      } else {
+        setProducts(data || []);
       }
-      
-      console.log('Fetched products:', data?.length, data);
-      setProducts(data || []);
     } catch (err: any) {
       console.error('Error fetching products:', err);
-      setError(`Erro inesperado: ${err.message || 'Erro desconhecido'}`);
+      setError(`Erro ao carregar produtos: ${err.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
