@@ -56,8 +56,8 @@ export default function Marketplace() {
   };
 
   const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.category || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const renderContent = () => {
@@ -139,7 +139,7 @@ export default function Marketplace() {
                         </div>
                       )}
                       <div className="absolute top-3 right-3 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-black text-indigo-600 shadow-sm">
-                        {product.price.toLocaleString()} Kz
+                        {(product.price || 0).toLocaleString()} Kz
                       </div>
                       <div className="absolute bottom-3 left-3 flex gap-2">
                         <span className="px-2 py-1 bg-stone-900/60 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg uppercase tracking-wider">

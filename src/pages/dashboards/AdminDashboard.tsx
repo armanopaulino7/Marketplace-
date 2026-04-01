@@ -666,7 +666,7 @@ export default function AdminDashboard() {
         await createNotification(
           withdrawal.user_id,
           status === 'approved' ? 'Saque Aprovado!' : 'Saque Rejeitado',
-          `Sua solicitação de saque no valor de ${withdrawal.amount.toLocaleString()} Kz foi ${status === 'approved' ? 'aprovada e o pagamento está sendo processado' : 'rejeitada pela administração'}.`,
+          `Sua solicitação de saque no valor de ${(withdrawal.amount || 0).toLocaleString()} Kz foi ${status === 'approved' ? 'aprovada e o pagamento está sendo processado' : 'rejeitada pela administração'}.`,
           'withdrawal',
           '/dashboard'
         );
@@ -727,7 +727,7 @@ export default function AdminDashboard() {
                         axisLine={false} 
                         tickLine={false} 
                         tick={{ fill: '#9ca3af', fontSize: 12 }}
-                        tickFormatter={(value) => `${value.toLocaleString()} Kz`}
+                        tickFormatter={(value) => `${(value || 0).toLocaleString()} Kz`}
                       />
                       <Tooltip 
                         contentStyle={{ 
@@ -792,10 +792,10 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[
                 { label: 'Usuários Totais', value: stats.users.toString(), icon: Users, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' },
-                { label: 'Vendas Totais (GMV)', value: `${stats.totalSales.toLocaleString()} Kz`, icon: ShoppingBag, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
-                { label: 'Faturamento Plataforma', value: `${stats.platformRevenue.toLocaleString()} Kz`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
-                { label: 'Taxas 10% (Vendas)', value: `${stats.totalPlatformFees.toLocaleString()} Kz`, icon: Package, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
-                { label: 'Taxas 200kz (Saques)', value: `${stats.totalWithdrawalFees.toLocaleString()} Kz`, icon: Wallet, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
+                { label: 'Vendas Totais (GMV)', value: `${(stats.totalSales || 0).toLocaleString()} Kz`, icon: ShoppingBag, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
+                { label: 'Faturamento Plataforma', value: `${(stats.platformRevenue || 0).toLocaleString()} Kz`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
+                { label: 'Taxas 10% (Vendas)', value: `${(stats.totalPlatformFees || 0).toLocaleString()} Kz`, icon: Package, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
+                { label: 'Taxas 200kz (Saques)', value: `${(stats.totalWithdrawalFees || 0).toLocaleString()} Kz`, icon: Wallet, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
                 { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' },
                 { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' },
               ].map((stat, i) => (
@@ -857,7 +857,7 @@ export default function AdminDashboard() {
                           <Wallet className="h-6 w-6" />
                         </div>
                         <div>
-                          <div className="font-bold text-stone-900 dark:text-white">{withdrawal.amount.toLocaleString()} Kz</div>
+                          <div className="font-bold text-stone-900 dark:text-white">{(withdrawal.amount || 0).toLocaleString()} Kz</div>
                           <div className="text-xs text-stone-500 dark:text-stone-400">{withdrawal.profiles?.email} • {withdrawal.method}</div>
                           <div className="text-[10px] font-mono text-stone-400 dark:text-stone-500 mt-1">{withdrawal.details?.info}</div>
                           {withdrawal.details?.fee > 0 && (
@@ -945,8 +945,8 @@ export default function AdminDashboard() {
                           <div className="text-[10px] text-stone-400">{order.producer?.email}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm font-bold text-stone-900 dark:text-white">{order.amount.toLocaleString()} Kz</div>
-                          <div className="text-[10px] text-stone-500">Entrega: {order.delivery_fee?.toLocaleString()} Kz</div>
+                          <div className="text-sm font-bold text-stone-900 dark:text-white">{(order.amount || 0).toLocaleString()} Kz</div>
+                          <div className="text-[10px] text-stone-500">Entrega: {(order.delivery_fee || 0).toLocaleString()} Kz</div>
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-[10px] font-bold text-stone-600 dark:text-stone-400 uppercase">{order.payment_method}</span>
@@ -990,8 +990,8 @@ export default function AdminDashboard() {
         );
       case 'home':
         const filteredProducts = products.filter(p => 
-          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.category.toLowerCase().includes(searchTerm.toLowerCase())
+          (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (p.category || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
         return (
           <div className="space-y-6">
@@ -1048,7 +1048,7 @@ export default function AdminDashboard() {
                             </div>
                           )}
                           <div className="absolute top-3 right-3 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-black text-indigo-600 shadow-sm">
-                            {product.price.toLocaleString()} Kz
+                            {(product.price || 0).toLocaleString()} Kz
                           </div>
                           <div className="absolute bottom-3 left-3">
                             <span className="px-2 py-1 bg-stone-900/60 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg uppercase tracking-wider">
@@ -1122,7 +1122,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex-1 text-center sm:text-left">
                       <h3 className="font-bold text-stone-900 dark:text-white text-lg">{product.name}</h3>
-                      <p className="text-sm text-stone-500 dark:text-stone-400">Produtor: {product.profiles?.email} • {product.price.toLocaleString()} Kz</p>
+                      <p className="text-sm text-stone-500 dark:text-stone-400">Produtor: {product.profiles?.email} • {(product.price || 0).toLocaleString()} Kz</p>
                       <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold mt-1 flex items-center gap-1">
                         <Truck className="h-3 w-3" />
                         Pickup: {product.pickup_address}
@@ -1376,7 +1376,7 @@ export default function AdminDashboard() {
                     deliveryFees.map((fee) => (
                       <tr key={fee.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors">
                         <td className="px-6 py-4 font-bold text-stone-900 dark:text-white">{fee.neighborhood}</td>
-                        <td className="px-6 py-4 text-stone-600 dark:text-stone-400">{fee.fee.toLocaleString()} Kz</td>
+                        <td className="px-6 py-4 text-stone-600 dark:text-stone-400">{(fee.fee || 0).toLocaleString()} Kz</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button 
@@ -1816,7 +1816,7 @@ function ProductDetailsModal({ product, onClose, onAction }: { product: any, onC
             <div className="space-y-4">
               <div>
                 <h3 className="text-2xl font-black text-stone-900 dark:text-white">{product.name}</h3>
-                <p className="text-indigo-600 font-bold text-xl mt-1">{product.price.toLocaleString()} Kz</p>
+                <p className="text-indigo-600 font-bold text-xl mt-1">{(product.price || 0).toLocaleString()} Kz</p>
               </div>
 
               <div className="space-y-2">

@@ -108,7 +108,7 @@ export function ProductReports() {
                       </span>
                       <span className="text-xs font-bold text-stone-400 flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}
+                        {report.created_at ? format(new Date(report.created_at), 'dd/MM/yyyy HH:mm') : 'Data desconhecida'}
                       </span>
                     </div>
                   </div>
