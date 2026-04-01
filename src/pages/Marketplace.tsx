@@ -37,7 +37,12 @@ export default function Marketplace() {
         .gt('quantity', 0)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching products:', error);
+        throw error;
+      }
+      
+      console.log('Fetched products:', data?.length);
       
       const forbiddenTerms = ['carro', 'casa', 'terreno', 'apartamento', 'vivenda', 'veículo', 'automóvel'];
       const filtered = (data || []).filter(p => {
