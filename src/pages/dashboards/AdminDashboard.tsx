@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       if (activeTab === 'home') {
         fetchProducts();
       }
-      if (activeTab === 'pedidos') {
+      if (activeTab === 'pedidos' || activeTab === 'dashboard') {
         fetchOrders();
       }
       fetchStats();
