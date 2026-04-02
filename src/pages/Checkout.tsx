@@ -34,6 +34,15 @@ export default function Checkout() {
   const ref = searchParams.get('ref');
   const qty = parseInt(searchParams.get('qty') || '1');
 
+  // Validate ref is a valid UUID if present
+  const isValidRef = (uuid: string | null) => {
+    if (!uuid) return true;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
+
+  const validatedRef = isValidRef(ref) ? ref : null;
+
   const [adminProfile, setAdminProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -107,17 +116,61 @@ export default function Checkout() {
   };
 
   const fetchProduct = async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    // Check if ID is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error('Invalid UUID format:', id);
+      setProduct(null);
+      setLoading(false);
+      return;
+    }
+
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('produtos')
-        .select('*, profiles!producer_id(full_name, email)')
+        .select(`
+          *,
+          profiles!producer_id (
+            full_name,
+            email
+          )
+        `)
         .eq('id', id)
         .single();
 
-      if (error) throw error;
-      setProduct(data);
+      if (error) {
+        console.error('Error fetching product with join:', error);
+        // Fallback without join
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (fallbackError) throw fallbackError;
+        
+        if (fallbackData) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', fallbackData.producer_id)
+            .single();
+          
+          fallbackData.profiles = profileData;
+          setProduct(fallbackData);
+        }
+      } else {
+        setProduct(data);
+      }
     } catch (err) {
       console.error('Error fetching product:', err);
+      setProduct(null);
     } finally {
       setLoading(false);
     }
@@ -170,7 +223,7 @@ export default function Checkout() {
           product_id: product.id,
           customer_id: user.id,
           producer_id: product.producer_id,
-          affiliate_id: ref || null,
+          affiliate_id: validatedRef,
           amount: totalOrderAmount,
           delivery_fee: selectedFee,
           neighborhood: selectedNeighborhood,
@@ -257,8 +310,24 @@ export default function Checkout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
         <div className="h-8 w-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col items-center justify-center p-4">
+        <AlertCircle className="h-12 w-12 text-rose-500 mb-4" />
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white">Produto não encontrado</h1>
+        <p className="text-stone-500 dark:text-stone-400 mt-2">Não foi possível carregar as informações do produto para o checkout.</p>
+        <button 
+          onClick={() => navigate('/')} 
+          className="mt-6 px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" /> Voltar ao Marketplace
+        </button>
       </div>
     );
   }
@@ -450,7 +519,7 @@ export default function Checkout() {
               
               <div className="flex gap-4">
                 <div className="h-20 w-20 bg-stone-100 dark:bg-stone-800 rounded-2xl overflow-hidden flex-shrink-0">
-                  {product.imagens?.[0] ? (
+                  {product?.imagens?.[0] ? (
                     <img src={product.imagens[0]} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-stone-300 dark:text-stone-600">
