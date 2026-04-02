@@ -144,13 +144,26 @@ export default function AdminDashboard() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
+      console.log('Fetching orders for admin...');
+      // Try with join first
       const { data, error } = await supabase
         .from('orders')
         .select('*, produtos(name, imagens), producer:profiles!producer_id(full_name, email)')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setOrders(data || []);
+      if (error) {
+        console.warn('Join in fetchOrders failed, fetching without join:', error);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (fallbackError) throw fallbackError;
+        setOrders(fallbackData || []);
+      } else {
+        console.log(`Fetched ${data?.length || 0} orders`);
+        setOrders(data || []);
+      }
     } catch (err) {
       console.error('Error fetching orders:', err);
     } finally {
@@ -931,9 +944,11 @@ export default function AdminDashboard() {
                               )}
                             </div>
                             <div>
-                              <div className="font-bold text-stone-900 dark:text-white text-sm">{Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}</div>
+                              <div className="font-bold text-stone-900 dark:text-white text-sm">
+                                {order.produtos ? (Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name) : 'Produto Removido'}
+                              </div>
                               <div className="text-[10px] text-stone-400">
-                                Qtd: {order.quantity || 1} • Entrega: {new Date(order.delivery_date).toLocaleDateString()}
+                                Qtd: {order.quantity || 1} • Entrega: {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}
                               </div>
                             </div>
                           </div>
