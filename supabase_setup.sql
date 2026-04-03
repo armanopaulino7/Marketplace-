@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- 1.1 FUNCTION TO CHECK IF USER IS ADMIN (Uses JWT metadata to avoid recursion)
 CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN AS $BODY$
 BEGIN
   -- Check role from JWT metadata first (fastest, no recursion)
   IF (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm') THEN
@@ -39,11 +39,11 @@ BEGIN
   -- To be safe and avoid recursion, we'll just rely on the JWT or a very specific check
   RETURN FALSE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 1.2 TRIGGER TO CREATE PROFILE ON SIGNUP
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $BODY$
 BEGIN
   INSERT INTO public.profiles (id, email, role, phone, phone2, full_name, avatar_url)
   VALUES (
@@ -62,7 +62,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger the function every time a user is created
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   delivery_date TEXT,
   producer_commission DECIMAL(12,2) DEFAULT 0.00,
   platform_fee DECIMAL(12,2) DEFAULT 0.00,
+  funds_processed BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -288,41 +289,55 @@ CREATE POLICY "delivery_fees_admin_policy" ON public.delivery_fees FOR ALL
 USING ((auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
 
 -- 7. RPC FUNCTIONS
+-- Function to create a wallet for a user if it doesn't exist
+CREATE OR REPLACE FUNCTION public.ensure_user_wallet()
+RETURNS TRIGGER AS $BODY$
+BEGIN
+    INSERT INTO public.wallets (user_id, balance, pending_balance)
+    VALUES (NEW.id, 0, 0)
+    ON CONFLICT (user_id) DO NOTHING;
+    RETURN NEW;
+END;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to create wallet on profile creation
+DROP TRIGGER IF EXISTS on_profile_created_wallet ON public.profiles;
+CREATE TRIGGER on_profile_created_wallet
+AFTER INSERT ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.ensure_user_wallet();
+
+-- Ensure all existing users have wallets
+INSERT INTO public.wallets (user_id, balance, pending_balance)
+SELECT id, 0, 0 FROM public.profiles
+ON CONFLICT (user_id) DO NOTHING;
+
 CREATE OR REPLACE FUNCTION public.process_sale_funds(
     user_id_param UUID, 
     amount_param DECIMAL, 
     description_param TEXT,
     days_to_release INTEGER DEFAULT 7
 )
-RETURNS VOID AS $$
+RETURNS VOID AS $BODY$
 DECLARE
     v_wallet_id UUID;
 BEGIN
     -- Obter ou criar carteira
+    INSERT INTO public.wallets (user_id, balance, pending_balance)
+    VALUES (user_id_param, 0, 0)
+    ON CONFLICT (user_id) DO NOTHING;
+
     SELECT id INTO v_wallet_id FROM public.wallets WHERE user_id = user_id_param;
     
-    IF v_wallet_id IS NULL THEN
-        IF days_to_release = 0 THEN
-            INSERT INTO public.wallets (user_id, balance, pending_balance)
-            VALUES (user_id_param, amount_param, 0)
-            RETURNING id INTO v_wallet_id;
-        ELSE
-            INSERT INTO public.wallets (user_id, balance, pending_balance)
-            VALUES (user_id_param, 0, amount_param)
-            RETURNING id INTO v_wallet_id;
-        END IF;
+    IF days_to_release = 0 THEN
+        UPDATE public.wallets
+        SET balance = balance + amount_param,
+            updated_at = now()
+        WHERE id = v_wallet_id;
     ELSE
-        IF days_to_release = 0 THEN
-            UPDATE public.wallets
-            SET balance = balance + amount_param,
-                updated_at = now()
-            WHERE id = v_wallet_id;
-        ELSE
-            UPDATE public.wallets
-            SET pending_balance = pending_balance + amount_param,
-                updated_at = now()
-            WHERE id = v_wallet_id;
-        END IF;
+        UPDATE public.wallets
+        SET pending_balance = pending_balance + amount_param,
+            updated_at = now()
+        WHERE id = v_wallet_id;
     END IF;
 
     -- Registrar transação
@@ -336,14 +351,14 @@ BEGIN
         now() + (days_to_release || ' days')::interval
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION public.deduct_wallet_balance(
     user_id_param UUID, 
-    amount_param DECIMAL, 
+    amount_param DECIMAL,
     description_param TEXT
 )
-RETURNS VOID AS $$
+RETURNS VOID AS $BODY$
 DECLARE
     v_wallet_id UUID;
 BEGIN
@@ -376,10 +391,10 @@ BEGIN
         now()
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION public.release_matured_funds(user_id_param UUID)
-RETURNS DECIMAL AS $$
+RETURNS DECIMAL AS $BODY$
 DECLARE
     v_wallet_id UUID;
     v_total_released DECIMAL := 0;
@@ -415,4 +430,4 @@ BEGIN
 
     RETURN v_total_released;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;

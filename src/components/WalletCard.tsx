@@ -38,8 +38,19 @@ export default function WalletCard({ hideWithdraw = false }: WalletCardProps) {
 
   useEffect(() => {
     if (user) {
-      fetchWallet();
-      fetchWithdrawalHistory();
+      const initializeWallet = async () => {
+        // Try to release any matured funds first
+        try {
+          await supabase.rpc('release_matured_funds', { user_id_param: user.id });
+        } catch (err) {
+          console.error('Error releasing matured funds:', err);
+        }
+        
+        fetchWallet();
+        fetchWithdrawalHistory();
+      };
+      
+      initializeWallet();
     }
   }, [user]);
 

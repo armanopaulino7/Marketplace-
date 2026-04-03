@@ -209,86 +209,13 @@ export default function AdminDashboard() {
         if (stockError) console.error('Error restoring stock:', stockError);
       }
 
-      // If status is being updated to 'completed' and it wasn't completed before
-      if (status === 'completed' && order.status !== 'completed') {
+      // If status is being updated to 'completed' and it wasn't completed before and funds not processed
+      if (status === 'completed' && order.status !== 'completed' && !order.funds_processed) {
         console.log('Order marked as completed, processing funds:', order);
-        
-        // Process funds when order is completed
-        try {
-          // 1. Process Producer Funds
-          if (order.producer_id && Number(order.producer_commission) > 0) {
-            console.log(`Processing producer funds: ${order.producer_commission} for ${order.producer_id}`);
-            const { error: pErr } = await supabase.rpc('process_sale_funds', {
-              user_id_param: order.producer_id,
-              amount_param: Number(order.producer_commission),
-              description_param: `Venda concluída: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
-              days_to_release: 0
-            });
-            if (pErr) throw new Error(`Erro Produtor: ${pErr.message}`);
-          }
-
-          // 2. Process Affiliate Funds
-          if (order.affiliate_id && Number(order.commission_amount) > 0) {
-            console.log(`Processing affiliate funds: ${order.commission_amount} for ${order.affiliate_id}`);
-            const { error: aErr } = await supabase.rpc('process_sale_funds', {
-              user_id_param: order.affiliate_id,
-              amount_param: Number(order.commission_amount),
-              description_param: `Comissão de afiliado concluída: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
-              days_to_release: 0
-            });
-            if (aErr) throw new Error(`Erro Afiliado: ${aErr.message}`);
-          }
-
-          // 3. Process Platform Fee (Admin)
-          if (Number(order.platform_fee) > 0) {
-            console.log(`Processing platform fee: ${order.platform_fee}`);
-            // Find an admin to receive the fee
-            const { data: adminUser } = await supabase
-              .from('profiles')
-              .select('id')
-              .or('role.eq.admin,role.eq.adm')
-              .limit(1)
-              .single();
-
-            if (adminUser) {
-              const { error: admErr } = await supabase.rpc('process_sale_funds', {
-                user_id_param: adminUser.id,
-                amount_param: Number(order.platform_fee),
-                description_param: `Taxa de plataforma: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
-                days_to_release: 0
-              });
-              if (admErr) throw new Error(`Erro Admin: ${admErr.message}`);
-            }
-          }
-          console.log('All funds processed successfully');
-        } catch (fundErr: any) {
-          console.error('Error processing funds on completion:', fundErr);
-          alert('Atenção: O pedido foi marcado como concluído, mas houve um erro ao processar os saldos: ' + fundErr.message);
-          // We don't return here because we still want to send notifications
-        }
-        
-        if (order.producer_id) {
-          await createNotification(
-            order.producer_id,
-            'Pedido Concluído',
-            `O pedido do produto ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name} foi marcado como concluído.`,
-            'sale',
-            '/dashboard/produtor'
-          );
-        }
-
-        if (order.affiliate_id) {
-          await createNotification(
-            order.affiliate_id,
-            'Venda de Afiliado Concluída',
-            `A venda do produto ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name} que você indicou foi concluída.`,
-            'commission',
-            '/dashboard/afiliado'
-          );
-        }
+        await handleProcessOrderFunds(order);
       }
 
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status, funds_processed: status === 'completed' ? true : o.funds_processed } : o));
       fetchOrders(); // Refresh to ensure sync
       if (status === 'completed') {
         alert('Pedido marcado como concluído e saldos creditados!');
@@ -297,6 +224,135 @@ export default function AdminDashboard() {
     } catch (err: any) {
       console.error('Error updating order status:', err);
       alert('Erro ao atualizar status do pedido: ' + (err.message || 'Erro desconhecido'));
+    }
+  };
+
+  const handleSyncAllFunds = async () => {
+    setLoading(true);
+    try {
+      const { data: pendingOrders, error } = await supabase
+        .from('orders')
+        .select('*, produtos(name)')
+        .eq('status', 'completed')
+        .eq('funds_processed', false);
+
+      if (error) throw error;
+
+      if (!pendingOrders || pendingOrders.length === 0) {
+        alert('Todos os saldos já estão processados.');
+        return;
+      }
+
+      if (confirm(`Deseja processar os saldos de ${pendingOrders.length} pedidos pendentes?`)) {
+        let successCount = 0;
+        for (const order of pendingOrders) {
+          const success = await handleProcessOrderFunds(order);
+          if (success) successCount++;
+        }
+        alert(`Processamento concluído: ${successCount} de ${pendingOrders.length} pedidos processados com sucesso.`);
+        fetchOrders();
+        fetchStats();
+      }
+    } catch (err: any) {
+      console.error('Error syncing funds:', err);
+      alert('Erro ao sincronizar saldos: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProcessOrderFunds = async (order: any) => {
+    if (order.funds_processed) {
+      alert('Os fundos para este pedido já foram processados.');
+      return;
+    }
+
+    try {
+      console.log('Processing funds for order:', order.id);
+      
+      // 1. Process Producer Funds
+      if (order.producer_id && Number(order.producer_commission) > 0) {
+        console.log(`Processing producer funds: ${order.producer_commission} for ${order.producer_id}`);
+        const { error: pErr } = await supabase.rpc('process_sale_funds', {
+          user_id_param: order.producer_id,
+          amount_param: Number(order.producer_commission),
+          description_param: `Venda concluída: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
+          days_to_release: 0
+        });
+        if (pErr) throw new Error(`Erro Produtor: ${pErr.message}`);
+      }
+
+      // 2. Process Affiliate Funds
+      if (order.affiliate_id && Number(order.commission_amount) > 0) {
+        console.log(`Processing affiliate funds: ${order.commission_amount} for ${order.affiliate_id}`);
+        const { error: aErr } = await supabase.rpc('process_sale_funds', {
+          user_id_param: order.affiliate_id,
+          amount_param: Number(order.commission_amount),
+          description_param: `Comissão de afiliado concluída: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
+          days_to_release: 0
+        });
+        if (aErr) throw new Error(`Erro Afiliado: ${aErr.message}`);
+      }
+
+      // 3. Process Platform Fee (Admin)
+      if (Number(order.platform_fee) > 0) {
+        console.log(`Processing platform fee: ${order.platform_fee}`);
+        // Find an admin to receive the fee
+        const { data: adminUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .or('role.eq.admin,role.eq.adm')
+          .limit(1)
+          .single();
+
+        if (adminUser) {
+          const { error: admErr } = await supabase.rpc('process_sale_funds', {
+            user_id_param: adminUser.id,
+            amount_param: Number(order.platform_fee),
+            description_param: `Taxa de plataforma: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
+            days_to_release: 0
+          });
+          if (admErr) throw new Error(`Erro Admin: ${admErr.message}`);
+        }
+      }
+
+      // Mark as processed
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ funds_processed: true })
+        .eq('id', order.id);
+
+      if (updateError) throw updateError;
+
+      console.log('All funds processed successfully');
+      
+      // Notify Producer
+      if (order.producer_id) {
+        await createNotification(
+          order.producer_id,
+          'Pedido Concluído',
+          `O pedido do produto ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name} foi marcado como concluído e o saldo creditado.`,
+          'sale',
+          '/dashboard/produtor'
+        );
+      }
+
+      // Notify Affiliate
+      if (order.affiliate_id) {
+        await createNotification(
+          order.affiliate_id,
+          'Venda de Afiliado Concluída',
+          `A venda do produto ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name} que você indicou foi concluída e sua comissão creditada.`,
+          'commission',
+          '/dashboard/afiliado'
+        );
+      }
+
+      return true;
+    } catch (fundErr: any) {
+      console.error('Error processing funds:', fundErr);
+      alert('Erro ao processar os saldos: ' + fundErr.message);
+      return false;
     }
   };
 
@@ -906,9 +962,19 @@ export default function AdminDashboard() {
       case 'pedidos':
         return (
           <div className="space-y-6">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Gestão de Pedidos</h1>
-              <p className="text-stone-500 dark:text-stone-400">Gerencie todos os pedidos realizados no sistema.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Gestão de Pedidos</h1>
+                <p className="text-stone-500 dark:text-stone-400">Gerencie todos os pedidos realizados no sistema.</p>
+              </div>
+              <button
+                onClick={handleSyncAllFunds}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm disabled:opacity-50"
+              >
+                <Clock className="h-4 w-4" />
+                Sincronizar Saldos Pendentes
+              </button>
             </div>
 
             <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden">
@@ -977,16 +1043,36 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <select 
-                            value={order.status}
-                            onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                            className="text-xs bg-stone-100 dark:bg-stone-800 border-none rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 outline-none"
-                          >
-                            <option value="pending">Pendente</option>
-                            <option value="processing">Em Processamento</option>
-                            <option value="completed">Concluído</option>
-                            <option value="cancelled">Cancelado</option>
-                          </select>
+                          <div className="flex flex-col gap-2">
+                            <select 
+                              value={order.status}
+                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                              className="text-xs bg-stone-100 dark:bg-stone-800 border-none rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            >
+                              <option value="pending">Pendente</option>
+                              <option value="processing">Em Processamento</option>
+                              <option value="completed">Concluído</option>
+                              <option value="cancelled">Cancelado</option>
+                            </select>
+                            
+                            {order.status === 'completed' && !order.funds_processed && (
+                              <button
+                                onClick={() => handleProcessOrderFunds(order)}
+                                className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1 rounded-lg font-bold hover:bg-amber-200 transition-colors flex items-center gap-1 justify-center whitespace-nowrap"
+                                title="Processar distribuição de comissões e taxas"
+                              >
+                                <AlertCircle className="h-3 w-3" />
+                                Processar Saldo
+                              </button>
+                            )}
+                            
+                            {order.funds_processed && (
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 justify-center">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Saldo Processado
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
