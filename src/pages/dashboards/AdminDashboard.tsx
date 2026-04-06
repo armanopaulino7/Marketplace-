@@ -1130,19 +1130,32 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden flex-shrink-0">
-                              {order.produtos?.imagens?.[0] ? (
-                                <img src={order.produtos.imagens[0]} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <Package className="h-5 w-5 m-2.5 text-stone-300" />
-                              )}
+                            <div className="h-12 w-12 rounded-xl bg-stone-100 dark:bg-stone-800 overflow-hidden flex-shrink-0 border border-stone-200 dark:border-stone-700">
+                              {(() => {
+                                const prod = Array.isArray(order.produtos) ? order.produtos[0] : order.produtos;
+                                const img = prod?.imagens?.[0];
+                                return img ? (
+                                  <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Package className="h-5 w-5 text-stone-300" />
+                                  </div>
+                                );
+                              })()}
                             </div>
                             <div>
                               <div className="font-bold text-stone-900 dark:text-white text-sm">
-                                {order.produtos ? (Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name) : 'Produto Removido'}
+                                {(() => {
+                                  const prod = Array.isArray(order.produtos) ? order.produtos[0] : order.produtos;
+                                  return prod?.name || 'Produto Removido';
+                                })()}
                               </div>
-                              <div className="text-[10px] text-stone-400">
-                                Qtd: {order.quantity || 1} • Entrega: {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}
+                              <div className="text-[10px] text-stone-400 flex items-center gap-2 mt-0.5">
+                                <span className="bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded text-stone-600 dark:text-stone-400 font-bold">
+                                  Qtd: {order.quantity || 1}
+                                </span>
+                                <span>•</span>
+                                <span>Entrega: {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'N/A'}</span>
                               </div>
                             </div>
                           </div>
