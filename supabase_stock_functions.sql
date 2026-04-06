@@ -1,6 +1,6 @@
 -- Function to decrement product stock
 CREATE OR REPLACE FUNCTION public.decrement_product_stock(product_id_param UUID, amount_param INTEGER)
-RETURNS VOID AS $$
+RETURNS VOID AS $BODY$
 BEGIN
     UPDATE public.produtos
     SET quantity = quantity - amount_param
@@ -10,14 +10,14 @@ BEGIN
         RAISE EXCEPTION 'Estoque insuficiente para o produto %', product_id_param;
     END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to increment product stock
 CREATE OR REPLACE FUNCTION public.increment_product_stock(product_id_param UUID, amount_param INTEGER)
-RETURNS VOID AS $$
+RETURNS VOID AS $BODY$
 BEGIN
     UPDATE public.produtos
     SET quantity = quantity + amount_param
     WHERE id = product_id_param;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$ LANGUAGE plpgsql SECURITY DEFINER;

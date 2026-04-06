@@ -155,6 +155,7 @@ CREATE TABLE IF NOT EXISTS public.wallets (
 CREATE TABLE IF NOT EXISTS public.wallet_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     wallet_id UUID REFERENCES public.wallets(id) NOT NULL,
+    user_id UUID REFERENCES public.profiles(id) NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
     type TEXT NOT NULL, -- 'sale', 'withdrawal', 'release', 'commission'
     status TEXT DEFAULT 'pending', -- 'pending', 'completed'
@@ -162,6 +163,16 @@ CREATE TABLE IF NOT EXISTS public.wallet_transactions (
     release_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Garantir que a coluna user_id existe (em caso de tabelas já existentes)
+DO $BODY$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='wallet_transactions' AND column_name='user_id') THEN
+        ALTER TABLE public.wallet_transactions ADD COLUMN user_id UUID REFERENCES public.profiles(id);
+        UPDATE public.wallet_transactions wt SET user_id = w.user_id FROM public.wallets w WHERE wt.wallet_id = w.id;
+        ALTER TABLE public.wallet_transactions ALTER COLUMN user_id SET NOT NULL;
+    END IF;
+END $BODY$;
 
 -- 6. DELIVERY FEES TABLE
 CREATE TABLE IF NOT EXISTS public.delivery_fees (
@@ -273,12 +284,7 @@ USING (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'
 
 DROP POLICY IF EXISTS "wallet_transactions_select_policy" ON public.wallet_transactions;
 CREATE POLICY "wallet_transactions_select_policy" ON public.wallet_transactions FOR SELECT 
-USING (
-  EXISTS (
-    SELECT 1 FROM public.wallets
-    WHERE public.wallets.id = wallet_transactions.wallet_id AND (public.wallets.user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'))
-  )
-);
+USING (user_id = auth.uid() OR (auth.jwt() -> 'user_metadata' ->> 'role' = 'adm'));
 
 -- 6. DELIVERY FEES POLICIES
 DROP POLICY IF EXISTS "Delivery fees are viewable by everyone" ON public.delivery_fees;
@@ -341,9 +347,10 @@ BEGIN
     END IF;
 
     -- Registrar transação
-    INSERT INTO public.wallet_transactions (wallet_id, amount, type, status, description, release_at)
+    INSERT INTO public.wallet_transactions (wallet_id, user_id, amount, type, status, description, release_at)
     VALUES (
         v_wallet_id, 
+        user_id_param,
         amount_param, 
         'sale', 
         CASE WHEN days_to_release = 0 THEN 'completed' ELSE 'pending' END, 
@@ -381,9 +388,10 @@ BEGIN
     WHERE id = v_wallet_id;
 
     -- Registrar transação
-    INSERT INTO public.wallet_transactions (wallet_id, amount, type, status, description, release_at)
+    INSERT INTO public.wallet_transactions (wallet_id, user_id, amount, type, status, description, release_at)
     VALUES (
         v_wallet_id, 
+        user_id_param,
         -amount_param, 
         'withdrawal', 
         'completed', 
@@ -431,3 +439,13 @@ BEGIN
     RETURN v_total_released;
 END;
 $BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. GARANTIR QUE O USUÁRIO ATUAL É ADMIN
+UPDATE public.profiles 
+SET role = 'adm' 
+WHERE email = 'paulinoarmando62@gmail.com';
+
+-- 9. GARANTIR QUE O USUÁRIO TEM CARTEIRA
+INSERT INTO public.wallets (user_id, balance, pending_balance)
+SELECT id, 0, 0 FROM public.profiles WHERE email = 'paulinoarmando62@gmail.com'
+ON CONFLICT (user_id) DO NOTHING;

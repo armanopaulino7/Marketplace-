@@ -22,7 +22,8 @@ import {
   ArrowRight,
   LogOut,
   DollarSign,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -68,6 +69,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [adminWallet, setAdminWallet] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
@@ -77,7 +79,9 @@ export default function AdminDashboard() {
     pendingWithdrawals: 0,
     pendingProducts: 0,
     totalPlatformFees: 0,
-    totalWithdrawalFees: 0
+    totalWithdrawalFees: 0,
+    walletBalance: 0,
+    pendingWalletBalance: 0
   });
   const [salesHistory, setSalesHistory] = useState<any[]>([]);
 
@@ -138,8 +142,24 @@ export default function AdminDashboard() {
       fetchPendingWithdrawals();
       fetchDeliveryFees();
       fetchUsers();
+      fetchAdminWallet();
     }
   }, [user, profile, activeTab]);
+
+  const fetchAdminWallet = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('wallets')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      setAdminWallet(data);
+    } catch (err) {
+      console.error('Error fetching admin wallet:', err);
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -294,22 +314,35 @@ export default function AdminDashboard() {
         if (aErr) throw new Error(`Erro Afiliado: ${aErr.message}`);
       }
 
-      // 3. Process Platform Fee (Admin)
-      if (Number(order.platform_fee) > 0) {
-        console.log(`Processing platform fee: ${order.platform_fee}`);
-        // Find an admin to receive the fee
-        const { data: adminUser } = await supabase
+      // 3. Process Platform Fee + Delivery Fee (Admin)
+      const adminAmount = Number(order.platform_fee) + Number(order.delivery_fee || 0);
+      if (adminAmount > 0) {
+        console.log(`Processing admin funds (fees + delivery): ${adminAmount}`);
+        
+        // Use current user if they are admin, otherwise find an admin
+        let adminId = user?.id;
+        
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('id')
-          .or('role.eq.admin,role.eq.adm')
-          .limit(1)
+          .select('role')
+          .eq('id', user?.id)
           .single();
+          
+        if (profile?.role !== 'adm' && profile?.role !== 'admin') {
+          const { data: adminUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .or('role.eq.admin,role.eq.adm')
+            .limit(1)
+            .single();
+          if (adminUser) adminId = adminUser.id;
+        }
 
-        if (adminUser) {
+        if (adminId) {
           const { error: admErr } = await supabase.rpc('process_sale_funds', {
-            user_id_param: adminUser.id,
-            amount_param: Number(order.platform_fee),
-            description_param: `Taxa de plataforma: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
+            user_id_param: adminId,
+            amount_param: adminAmount,
+            description_param: `Taxas e Entrega: ${Array.isArray(order.produtos) ? (order.produtos as any)[0]?.name : (order.produtos as any)?.name}`,
             days_to_release: 0
           });
           if (admErr) throw new Error(`Erro Admin: ${admErr.message}`);
@@ -325,6 +358,7 @@ export default function AdminDashboard() {
       if (updateError) throw updateError;
 
       console.log('All funds processed successfully');
+      setWalletRefreshKey(prev => prev + 1);
       
       // Notify Producer
       if (order.producer_id) {
@@ -356,6 +390,70 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleApproveWithdrawal = async (withdrawal: any) => {
+    if (!window.confirm(`Deseja aprovar o saque de ${withdrawal.amount.toLocaleString()} Kz para ${withdrawal.profiles?.email || 'este usuário'}?`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Deduct from user's wallet balance using RPC
+      const { error: deductError } = await supabase.rpc('deduct_wallet_balance', {
+        user_id_param: withdrawal.user_id,
+        amount_param: withdrawal.amount,
+        description_param: `Saque aprovado (${withdrawal.method})`
+      });
+
+      if (deductError) throw deductError;
+
+      // 2. Update withdrawal request status
+      const { error: updateError } = await supabase
+        .from('withdrawal_requests')
+        .update({ status: 'approved', updated_at: new Date().toISOString() })
+        .eq('id', withdrawal.id);
+
+      if (updateError) throw updateError;
+
+      alert('Saque aprovado com sucesso!');
+      fetchPendingWithdrawals();
+      fetchStats();
+      fetchAdminWallet();
+    } catch (err: any) {
+      console.error('Error approving withdrawal:', err);
+      alert('Erro ao aprovar saque: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectWithdrawal = async (withdrawal: any) => {
+    const reason = window.prompt('Motivo da rejeição:');
+    if (reason === null) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('withdrawal_requests')
+        .update({ 
+          status: 'rejected', 
+          updated_at: new Date().toISOString(),
+          details: { ...withdrawal.details, rejection_reason: reason }
+        })
+        .eq('id', withdrawal.id);
+
+      if (error) throw error;
+
+      alert('Saque rejeitado.');
+      fetchPendingWithdrawals();
+      fetchStats();
+    } catch (err: any) {
+      console.error('Error rejecting withdrawal:', err);
+      alert('Erro ao rejeitar saque: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -382,6 +480,8 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  const [walletRefreshKey, setWalletRefreshKey] = useState(0);
 
   const fetchStats = async () => {
     try {
@@ -416,6 +516,22 @@ export default function AdminDashboard() {
       const totalWithdrawalFees = (approvedWithdrawals || []).reduce((acc, w) => {
         return acc + (w.details?.fee || 0);
       }, 0);
+
+      // Fetch admin wallet
+      let walletBalance = 0;
+      let pendingWalletBalance = 0;
+      if (user) {
+        const { data: walletData } = await supabase
+          .from('wallets')
+          .select('balance, pending_balance')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (walletData) {
+          walletBalance = walletData.balance;
+          pendingWalletBalance = walletData.pending_balance;
+        }
+      }
       
       setStats({
         users: usersCount || 0,
@@ -424,7 +540,9 @@ export default function AdminDashboard() {
         pendingWithdrawals: pendingWithCount || 0,
         pendingProducts: pendingProdCount || 0,
         totalPlatformFees,
-        totalWithdrawalFees
+        totalWithdrawalFees,
+        walletBalance,
+        pendingWalletBalance
       });
 
       // Generate sales history for the last 7 days
@@ -765,12 +883,22 @@ export default function AdminDashboard() {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Dashboard ADM</h1>
-              <p className="text-stone-500 dark:text-stone-400">Visão geral do sistema e métricas principais.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Dashboard ADM</h1>
+                <p className="text-stone-500 dark:text-stone-400">Visão geral do sistema e métricas principais.</p>
+              </div>
+              <button
+                onClick={handleSyncAllFunds}
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-indigo-200 dark:shadow-none disabled:opacity-50"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Sincronizar Todos os Saldos
+              </button>
             </div>
 
-            <WalletCard />
+            <WalletCard key={`wallet-dash-${walletRefreshKey}`} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800">
@@ -1062,15 +1190,20 @@ export default function AdminDashboard() {
                                 title="Processar distribuição de comissões e taxas"
                               >
                                 <AlertCircle className="h-3 w-3" />
-                                Processar Saldo
+                                Liberar Saldo
                               </button>
                             )}
                             
                             {order.funds_processed && (
-                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 justify-center">
-                                <CheckCircle2 className="h-3 w-3" />
-                                Saldo Processado
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 justify-center">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Saldo Resolvido
+                                </span>
+                                <span className="text-[8px] text-stone-400 text-center uppercase tracking-tighter">
+                                  Taxas & Comissões OK
+                                </span>
+                              </div>
                             )}
                           </div>
                         </td>
@@ -1333,51 +1466,113 @@ export default function AdminDashboard() {
             </div>
           </div>
         );
-      case 'carteira':
+      case 'financeiro':
         return (
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Carteira Administrativa</h1>
-            <div className="bg-indigo-600 p-8 rounded-3xl text-white shadow-xl shadow-indigo-100 dark:shadow-none relative overflow-hidden">
-              <div className="relative z-10">
-                <p className="text-indigo-100 text-sm font-medium mb-1">Saldo Total em Custódia</p>
-                <h2 className="text-4xl font-black">1.245.850,00 Kz</h2>
-                <div className="mt-6 flex gap-4">
-                  <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl flex-1">
-                    <p className="text-[10px] uppercase font-bold text-indigo-200">Comissões ADM</p>
-                    <p className="text-lg font-bold">84.200,00 Kz</p>
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Financeiro</h1>
+                <p className="text-stone-500 dark:text-stone-400">Gerencie o saldo da plataforma e solicitações de saque.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSyncAllFunds}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-indigo-200 dark:shadow-none disabled:opacity-50"
+                >
+                  <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+                  Sincronizar Todos os Saldos
+                </button>
+                <button 
+                  onClick={fetchPendingWithdrawals}
+                  className="p-3 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-2xl hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
+                  title="Atualizar"
+                >
+                  <Clock className={cn("h-5 w-5", loading && "animate-spin")} />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-indigo-600" />
+                    Solicitações de Saque Pendentes
+                  </h2>
+                  <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-bold rounded-full">
+                    {pendingWithdrawals.length} Pendentes
+                  </span>
+                </div>
+
+                {pendingWithdrawals.length === 0 ? (
+                  <div className="bg-white dark:bg-stone-900 p-12 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+                    <CheckCircle2 className="h-16 w-16 text-emerald-100 dark:text-emerald-900/30 mx-auto" />
+                    <h2 className="text-xl font-bold text-stone-900 dark:text-white">Tudo em dia!</h2>
+                    <p className="text-stone-500 dark:text-stone-400">Não há solicitações de saque pendentes no momento.</p>
                   </div>
-                  <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl flex-1">
-                    <p className="text-[10px] uppercase font-bold text-indigo-200">Taxas de Processamento</p>
-                    <p className="text-lg font-bold">12.450,00 Kz</p>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingWithdrawals.map((withdrawal) => (
+                      <div key={withdrawal.id} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6 group hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all">
+                        <div className="h-14 w-14 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
+                          <Clock className="h-7 w-7" />
+                        </div>
+                        <div className="flex-1 text-center sm:text-left">
+                          <div className="flex items-center justify-center sm:justify-start gap-2">
+                            <h3 className="font-bold text-stone-900 dark:text-white text-lg">{(withdrawal.amount || 0).toLocaleString()} Kz</h3>
+                            <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded uppercase tracking-wider">Pendente</span>
+                          </div>
+                          <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">
+                            Solicitado por: <span className="text-stone-900 dark:text-white">{withdrawal.profiles?.email || 'N/A'}</span> • {new Date(withdrawal.created_at).toLocaleDateString()}
+                          </p>
+                          <div className="mt-2 p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl text-xs text-stone-500 dark:text-stone-400 border border-stone-100 dark:border-stone-800">
+                            <div className="flex flex-col gap-1">
+                              <p><span className="font-bold text-stone-700 dark:text-stone-300">Método:</span> {withdrawal.method}</p>
+                              <p><span className="font-bold text-stone-700 dark:text-stone-300">IBAN/Info:</span> {withdrawal.details?.info}</p>
+                              {withdrawal.details?.fee && <p><span className="font-bold text-stone-700 dark:text-stone-300">Taxa:</span> {withdrawal.details.fee.toLocaleString()} Kz</p>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <button 
+                            onClick={() => handleApproveWithdrawal(withdrawal)}
+                            disabled={loading}
+                            className="flex-1 sm:flex-none px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 dark:shadow-none disabled:opacity-50"
+                          >
+                            Aprovar
+                          </button>
+                          <button 
+                            onClick={() => handleRejectWithdrawal(withdrawal)}
+                            disabled={loading}
+                            className="flex-1 sm:flex-none px-6 py-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all disabled:opacity-50"
+                          >
+                            Recusar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                )}
+              </div>
+
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-indigo-600" />
+                  Sua Carteira ADM
+                </h2>
+                <WalletCard key={`wallet-fin-${walletRefreshKey}`} />
+                
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-3xl border border-indigo-100 dark:border-indigo-900/50 space-y-4">
+                  <h3 className="font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Dica Financeira
+                  </h3>
+                  <p className="text-sm text-indigo-700 dark:text-indigo-400 leading-relaxed">
+                    Use o botão <strong>"Sincronizar Todos os Saldos"</strong> para processar fundos de pedidos concluídos e torná-los disponíveis para saque.
+                  </p>
                 </div>
               </div>
-              <Wallet className="absolute -right-8 -bottom-8 h-48 w-48 text-white/5 rotate-12" />
-            </div>
-          </div>
-        );
-      case 'aprovacao-saque':
-        return (
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-stone-900 dark:text-white">Solicitações de Saque</h1>
-            <div className="space-y-4">
-              {[1, 2].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-6">
-                  <div className="h-14 w-14 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center text-orange-600 dark:text-orange-400">
-                    <Clock className="h-7 w-7" />
-                  </div>
-                  <div className="flex-1 text-center sm:text-left">
-                    <div className="flex items-center justify-center sm:justify-start gap-2">
-                      <h3 className="font-bold text-stone-900 dark:text-white">1.500,00 Kz</h3>
-                      <span className="px-2 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 text-[10px] font-bold rounded uppercase">Pendente</span>
-                    </div>
-                    <p className="text-sm text-stone-500 dark:text-stone-400">Solicitado por: produtor@exemplo.com • Há 2 dias</p>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <button className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all">Aprovar Saque</button>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         );

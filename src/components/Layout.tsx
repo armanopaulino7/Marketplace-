@@ -27,7 +27,8 @@ import {
   History,
   MessageSquare,
   ShoppingCart,
-  LogIn
+  LogIn,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
@@ -72,9 +73,9 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'pedidos', label: 'Pedidos', icon: ClipboardList },
+          { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
           { id: 'home', label: 'Home', icon: Home },
           { id: 'cart', label: 'Carrinho', icon: ShoppingCart },
-          { id: 'financeiro', label: 'Aprovar Solicitação de Saque', icon: Wallet },
           { id: 'aprovacao-produtos', label: 'Aprovação de Produtos', icon: CheckSquare },
           { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users },
           { id: 'taxas-entrega', label: 'Taxas de Entrega', icon: Truck },
