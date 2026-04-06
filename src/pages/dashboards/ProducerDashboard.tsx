@@ -95,7 +95,8 @@ export default function ProducerDashboard() {
   const [stats, setStats] = useState({
     activeProducts: 0,
     totalRevenue: 0,
-    affiliates: 0
+    affiliates: 0,
+    totalWithdrawn: 0
   });
   const [salesHistory, setSalesHistory] = useState<any[]>([]);
 
@@ -315,10 +316,19 @@ export default function ProducerDashboard() {
         .eq('status', 'approved')
         .in('product_id', productIds);
 
+      const { data: withdrawals } = await supabase
+        .from('withdrawal_requests')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('status', 'approved');
+      
+      const totalWithdrawn = withdrawals?.reduce((sum, w) => sum + (w.amount || 0), 0) || 0;
+
       setStats({
         activeProducts: productIds.length,
         totalRevenue: totalSales,
-        affiliates: affiliateCount || 0
+        affiliates: affiliateCount || 0,
+        totalWithdrawn
       });
 
       // Generate sales history for the last 7 days
@@ -753,11 +763,12 @@ export default function ProducerDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: 'Produtos Ativos', value: stats.activeProducts.toString(), icon: Package, color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
                 { label: 'Receita Total', value: `${stats.totalRevenue.toLocaleString()} Kz`, icon: TrendingUp, color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' },
                 { label: 'Afiliados', value: stats.affiliates.toString(), icon: Users, color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' },
+                { label: 'Total Sacado', value: `${(stats.totalWithdrawn || 0).toLocaleString()} Kz`, icon: Wallet, color: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
                   <div className="flex items-center justify-between mb-4">

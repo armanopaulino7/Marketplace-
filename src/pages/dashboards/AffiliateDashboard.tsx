@@ -61,7 +61,8 @@ export default function AffiliateDashboard() {
   const [stats, setStats] = useState({
     pendingCommission: 0,
     totalClicks: 0,
-    level: 'Bronze'
+    level: 'Bronze',
+    totalWithdrawn: 0
   });
   const [commissionHistory, setCommissionHistory] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
@@ -77,12 +78,21 @@ export default function AffiliateDashboard() {
         .eq('user_id', user.id)
         .single();
 
+      const { data: withdrawals } = await supabase
+        .from('withdrawal_requests')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('status', 'approved');
+      
+      const totalWithdrawn = withdrawals?.reduce((sum, w) => sum + (w.amount || 0), 0) || 0;
+
       // For now, let's just use the wallet balance as commission
       // In a real app, we'd have a commissions table
       setStats({
         pendingCommission: wallet?.balance || 0,
         totalClicks: 0, // Need a clicks tracking table for this
-        level: 'Bronze'
+        level: 'Bronze',
+        totalWithdrawn
       });
 
       // Generate commission history for the last 7 days
@@ -450,11 +460,12 @@ export default function AffiliateDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: 'Comissão Pendente', value: `${stats.pendingCommission.toFixed(2)} Kz`, icon: DollarSign, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' },
                 { label: 'Cliques Totais', value: stats.totalClicks.toString(), icon: Target, color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' },
                 { label: 'Nível de Afiliado', value: stats.level, icon: Award, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
+                { label: 'Total Sacado', value: `${(stats.totalWithdrawn || 0).toLocaleString()} Kz`, icon: Wallet, color: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
                   <div className="flex items-center justify-between mb-4">

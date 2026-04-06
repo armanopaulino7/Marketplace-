@@ -80,6 +80,7 @@ export default function AdminDashboard() {
     pendingProducts: 0,
     totalPlatformFees: 0,
     totalWithdrawalFees: 0,
+    totalWithdrawn: 0,
     walletBalance: 0,
     pendingWalletBalance: 0
   });
@@ -522,11 +523,15 @@ export default function AdminDashboard() {
       // Fetch withdrawal fees (200kz)
       const { data: approvedWithdrawals } = await supabase
         .from('withdrawal_requests')
-        .select('details')
+        .select('amount, details')
         .eq('status', 'approved');
       
       const totalWithdrawalFees = (approvedWithdrawals || []).reduce((acc, w) => {
         return acc + (w.details?.fee || 0);
+      }, 0);
+
+      const totalWithdrawn = (approvedWithdrawals || []).reduce((acc, w) => {
+        return acc + (w.amount || 0);
       }, 0);
 
       // Fetch admin wallet
@@ -553,6 +558,7 @@ export default function AdminDashboard() {
         pendingProducts: pendingProdCount || 0,
         totalPlatformFees,
         totalWithdrawalFees,
+        totalWithdrawn,
         walletBalance,
         pendingWalletBalance
       });
@@ -1006,6 +1012,7 @@ export default function AdminDashboard() {
                 { label: 'Taxas 10% (Vendas)', value: `${(stats.totalPlatformFees || 0).toLocaleString()} Kz`, icon: Package, color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
                 { label: 'Taxas 200kz (Saques)', value: `${(stats.totalWithdrawalFees || 0).toLocaleString()} Kz`, icon: Wallet, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' },
                 { label: 'Saques Pendentes', value: stats.pendingWithdrawals.toString(), icon: Wallet, color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' },
+                { label: 'Total Sacado', value: `${(stats.totalWithdrawn || 0).toLocaleString()} Kz`, icon: Wallet, color: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' },
                 { label: 'Produtos Pendentes', value: stats.pendingProducts.toString(), icon: CheckSquare, color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm">
