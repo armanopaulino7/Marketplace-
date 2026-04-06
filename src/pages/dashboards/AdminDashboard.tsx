@@ -165,10 +165,14 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       console.log('Fetching orders for admin...');
-      // Try with join first
+      // Try with join first - including producer and product details
       const { data, error } = await supabase
         .from('orders')
-        .select('*, produtos(name, imagens), producer:profiles!producer_id(full_name, email)')
+        .select(`
+          *,
+          produtos:product_id (name, imagens),
+          producer:profiles!producer_id (full_name, email)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -179,7 +183,15 @@ export default function AdminDashboard() {
           .order('created_at', { ascending: false });
         
         if (fallbackError) throw fallbackError;
-        setOrders(fallbackData || []);
+        
+        // Manual join for fallback
+        const ordersWithData = await Promise.all((fallbackData || []).map(async (order) => {
+          const { data: prodData } = await supabase.from('produtos').select('name, imagens').eq('id', order.product_id).single();
+          const { data: profileData } = await supabase.from('profiles').select('full_name, email').eq('id', order.producer_id).single();
+          return { ...order, produtos: prodData, producer: profileData };
+        }));
+        
+        setOrders(ordersWithData);
       } else {
         console.log(`Fetched ${data?.length || 0} orders`);
         setOrders(data || []);
@@ -1162,9 +1174,17 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-bold text-stone-900 dark:text-white">
-                            {order.producer?.full_name || order.producer?.email || 'N/A'}
+                            {(() => {
+                              const producerData = Array.isArray(order.producer) ? order.producer[0] : order.producer;
+                              return producerData?.full_name || producerData?.email || 'Produtor não encontrado';
+                            })()}
                           </div>
-                          <div className="text-[10px] text-stone-400">{order.producer?.email}</div>
+                          {(() => {
+                            const producerData = Array.isArray(order.producer) ? order.producer[0] : order.producer;
+                            return producerData?.email && (
+                              <div className="text-[10px] text-stone-400">{producerData.email}</div>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-bold text-stone-900 dark:text-white">{(order.amount || 0).toLocaleString()} Kz</div>
