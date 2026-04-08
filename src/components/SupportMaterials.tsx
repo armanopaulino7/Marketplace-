@@ -179,12 +179,43 @@ export function SupportMaterials({ mode = 'affiliate' }: { mode?: 'affiliate' | 
                 <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">{material.produtos?.name}</p>
               </div>
 
-              <p className="mt-4 text-sm text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
+              {material.file_type === 'image' && (
+                <div className="mt-4 aspect-video rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-100 dark:border-stone-800">
+                  <img 
+                    src={material.file_url} 
+                    alt={material.title} 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              )}
+
+              {material.file_type === 'video' && (
+                <div className="mt-4 aspect-video rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-100 dark:border-stone-800">
+                  <video 
+                    src={material.file_url} 
+                    controls 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <p className="mt-4 text-sm text-stone-500 dark:text-stone-400 leading-relaxed whitespace-pre-wrap">
                 {material.description}
               </p>
 
-              <div className="mt-6 pt-6 border-t border-stone-50 dark:border-stone-800">
+              <div className="mt-6 pt-6 border-t border-stone-50 dark:border-stone-800 flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Tipo: {material.file_type}</span>
+                {material.file_type === 'text' && (
+                  <a 
+                    href={material.file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:underline"
+                  >
+                    Abrir Link
+                  </a>
+                )}
               </div>
             </div>
           ))
